@@ -40,5 +40,3 @@ const server = serve({
 });
 
 console.log(`🚀 Server running at ${server.url}`);
-
-wasm.greet();

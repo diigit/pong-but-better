@@ -1,10 +1,10 @@
+import MovingBackground from "./components/ui/moving-background";
 import GameCanvas from "./GameCanvas";
-import logo from "./logo.svg";
-import reactLogo from "./react.svg";
 
 export function App() {
   return (
-    <div>
+    <div className="w-screen h-screen flex items-center justify-center">
+      <MovingBackground/>
       <GameCanvas/>
     </div>
   );

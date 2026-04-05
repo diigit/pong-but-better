@@ -1,6 +1,6 @@
 export function GameCanvas() {
 	return (
-		<canvas>
+		<canvas className="bg-white rounded-xl w-200 h-100 drop-shadow-xl">
 
 		</canvas>
 	)

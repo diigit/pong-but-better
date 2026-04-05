@@ -4,14 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --hot src/index.ts",
-    "start": "NODE_ENV=production bun src/index.ts",
-    "build": "bun run build.ts"
+    "twbuild": "bun x @tailwindcss/cli -i styles/globals.css -o src/output.css",
+    "twwatch": "bun twbuild --watch",
+    "dev": "bun --hot src/index.ts & bun twwatch",
+    "start": "NODE_ENV=production bun src/index.ts & bun twwatch",
+    "build": "bun run build.ts & bun twbuild"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",
+    "@tailwindcss/cli": "^4.2.2",
     "bun-plugin-tailwind": "^0.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
