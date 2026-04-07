@@ -5,7 +5,7 @@ node_modules
 out
 dist
 *.tgz
-./src/output.css
+/src/output.css
 
 # code coverage
 coverage
