@@ -40,3 +40,6 @@ const server = serve({
 });
 
 console.log(`🚀 Server running at ${server.url}`);
+
+// load wasm thingamajig
+let a = wasm;
