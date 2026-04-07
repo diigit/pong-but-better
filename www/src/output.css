@@ -243,9 +243,6 @@
   .justify-center {
     justify-content: center;
   }
-  .justify-self-center {
-    justify-self: center;
-  }
   .overflow-hidden {
     overflow: hidden;
   }
