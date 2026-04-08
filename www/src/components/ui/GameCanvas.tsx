@@ -1,39 +1,19 @@
+import { rendererContext } from "@/frontend";
 import React from "react";
 
 var beCool = false;
 
-const CANVAS_WIDTH = 512;
-const CANVAS_HEIGHT = 256;
-
 export function GameCanvas() {
 	let canvasElementRef = React.useRef(null as null | HTMLCanvasElement);
+	let renderer = React.useContext(rendererContext);
 	
 	React.useEffect(() => {
 		let canvasElement = canvasElementRef.current;
-		if (canvasElement === null) return;
+		if (!canvasElement) return;
+		
+		renderer.setCanvas(canvasElement);
 
-		let gpu = window.navigator.gpu;
-		if (gpu === undefined) Error("WebGPU is not supported by this browser.");
-
-		const gpuStuff = async () => {
-			let gpuAdapter = await gpu.requestAdapter();
-			if (!gpuAdapter) throw Error("Unable to retrieve GPU Adapter.");
-
-			let device = await gpuAdapter.requestDevice();
-			if (!device) throw Error("Unable to retrieve GPU Device.");
-
-			const context = canvasElement.getContext("webgpu") as GPUCanvasContext;
-			context.configure({
-				device,
-				format: gpu.getPreferredCanvasFormat(),
-			});
-
-			console.log("success so far!");
-		}	
-
-		gpuStuff();
-
-		return () => { }
+		return () => { renderer.setCanvas(undefined) } 
 	}, [canvasElementRef.current])
 	
 	const titleTextArr = [
