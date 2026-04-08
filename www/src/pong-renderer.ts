@@ -17,6 +17,7 @@ function modIncrement(n: number, len: number) {
 	return (n + 1) % len
 }
 
+// todo: in rust or gpu?
 function calcTriangles(polygon: Polygon) {
 	let triangles: Point[][] = []
 	let vertices = polygon.vertices;
@@ -54,12 +55,24 @@ function calcTriangles(polygon: Polygon) {
 	return triangles;
 }
 
-class RenderedPolygon {
-	constructor(public readonly gameObject: GameObject) {
-		this.triangles = calcTriangles(gameObject.shape as Polygon);
+class GpuHandler {
+	constructor(private device: GPUDevice) {
+		this.vertexBuffer = device.createBuffer({
+			label: "Polygon vertex buffer",
+			size: 32 * 2 * 0,
+			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
+		});
 	}
 
-	public readonly triangles: Point[][];
+	passTriangles(triangles: Point[][]) {
+		
+	}
+
+	cleanup() {
+
+	}
+
+	private vertexBuffer: GPUBuffer;
 }
 
 export class PongRenderer {
@@ -73,6 +86,7 @@ export class PongRenderer {
 
 		if (canvas === undefined) {
 			// TODO cleanup
+			this.gpuHandler?.cleanup();
 			return;
 		}
 
@@ -81,8 +95,6 @@ export class PongRenderer {
 
 		let device = await gpuAdapter.requestDevice();
 		if (!device) throw Error("Unable to retrieve GPU Device.");
-
-		// TODO: get device and manage its distribution throughout the entire class
 		
 		const context = canvas.getContext("webgpu") as GPUCanvasContext;
 		context.configure({
@@ -90,20 +102,32 @@ export class PongRenderer {
 			format: this.gpu.getPreferredCanvasFormat(),
 		});
 
-		
+		this.gpuHandler = new GpuHandler(device);
 	}
 
 	renderPass() {
 		// for each object, convert it into triangles and add it too the vertex buffer and draw the triangle.
 	}
 	
+	// potentitally optimize by running on wasm or gpu
+	updateTriangles() {
+		let allTriangles: Point[][] = [];
+
+		this.polygons.forEach((gameObject) => {
+			const polygonTriangles = calcTriangles(gameObject.shape as Polygon);
+			allTriangles.concat(polygonTriangles);
+		});	
+
+		this.gpuHandler?.passTriangles(allTriangles);
+	}
+
 	renderGameObject(object: GameObject) {
 		const shapeType = object.shape.tag;
 
 		if (shapeType === ShapeTag.Polygon) {
-			this.polygons.add(new RenderedPolygon(object));
+			this.polygons.add(object);
 		} else if (shapeType === ShapeTag.Circle) {
-			this.circles.add(object)
+			this.circles.add(object);
 		} else {
 			throw Error("Could not render shape.");
 		}
@@ -111,12 +135,7 @@ export class PongRenderer {
 
 	unrenderGameObject(object: GameObject) {
 		if (object.shape.tag === ShapeTag.Polygon) {
-			for (const polygon of this.polygons) {
-				if (polygon.gameObject === object) {
-					this.polygons.delete(polygon);
-					break;
-				}
-			}
+			this.polygons.delete(object)
 		} else if (object.shape.tag === ShapeTag.Circle) {
 			this.circles.delete(object)
 		} else {
@@ -124,11 +143,10 @@ export class PongRenderer {
 		}
 	}
 
-	private polygons = new Set<RenderedPolygon>;
+	private polygons = new Set<GameObject>;
 	private circles = new Set<GameObject>;
-	private renderedObjects = new Map<ShapeTag.Polygon | ShapeTag.Circle, GameObject[]>;
 	private canvas: HTMLCanvasElement | undefined;
 	private gpu: GPU;
 
-	private _device: GPUDevice | undefined;
+	private gpuHandler: GpuHandler | undefined;
 }
