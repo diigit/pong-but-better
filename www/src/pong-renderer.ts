@@ -61,6 +61,8 @@ class GpuHandler {
 		});
 
 		this.vertexBuffer = this.createVertexBuffer(32 * VERTEX_BUFFER_STARTING_LENGTH);
+
+		this.renderLoopId = window.requestAnimationFrame(this.render)
 	}
 
 	createVertexBuffer(size: number): GPUBuffer {
@@ -112,6 +114,7 @@ class GpuHandler {
 
 	cleanup() {
 		this.vertexBuffer.destroy();
+		window.cancelAnimationFrame(this.renderLoopId);
 	}
 
 	private vertexBuffer: GPUBuffer;
@@ -119,6 +122,7 @@ class GpuHandler {
 	private renderPipeline: GPURenderPipeline;
 	private context: GPUCanvasContext;
 	private numTriangles: number = 0;
+	private renderLoopId: number;
 }
 
 export class PongRenderer {
