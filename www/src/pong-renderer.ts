@@ -1,78 +1,124 @@
-import { Point, Polygon, Shape, ShapeTag } from "2d-geometry";
 import { GameObject } from "./game-objects";
 
 const CANVAS_WIDTH = 512;
 const CANVAS_HEIGHT = 256;
-
-// assume that all polys are convex cus i dont feel like implementing a function for this rn
-function checkConvexClockwise(v0: Point, v1: Point, v2: Point) {
-	return true;
-}
-
-function modDecrement(n: number, len: number) {
-	return (n - 1 + len) % len
-}
-
-function modIncrement(n: number, len: number) {
-	return (n + 1) % len
-}
-
-// todo: in rust or gpu?
-function calcTriangles(polygon: Polygon) {
-	let triangles: Point[][] = []
-	let vertices = polygon.vertices;
-	let clippedVertices = polygon.vertices;
-
-	const numVertices = clippedVertices.length;
-
-	let i0 = 0;
-	let i1 = 1;
-	while (clippedVertices.length < numVertices - 2) {
-		const prevIndex = modDecrement(i0, clippedVertices.length)
-		const nextIndex = modIncrement(i0, clippedVertices.length)
-
-		const v0 = vertices[prevIndex] as Point;
-		const v1 = vertices[i0] as Point;
-		const v2 = vertices[nextIndex] as Point;
-		
-		if (checkConvexClockwise(v0, v1, v2)) {
-			triangles.push([v0, v1, v2]);
-			clippedVertices.splice(i0, 1);
-			
-			i1 = prevIndex // previous vertex
-			i0 = nextIndex; // next vertex
-		} else {
-			if (i0 !== i1) {
-				i0 = i1;
-			} else {
-				i0 = modIncrement(i0, clippedVertices.length);
-				i0 = modIncrement(i0, clippedVertices.length);
-				i1 = i0
-			}
-		}
-	}
-
-	return triangles;
-}
+const VERTEX_BUFFER_STARTING_LENGTH = 64; // 32 vertices
 
 class GpuHandler {
-	constructor(private device: GPUDevice) {
-		this.vertexBuffer = device.createBuffer({
-			label: "Polygon vertex buffer",
-			size: 32 * 2 * 0,
-			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
+	constructor(private device: GPUDevice, canvas: HTMLCanvasElement) {
+		const canvasFormat = window.navigator.gpu.getPreferredCanvasFormat();
+
+		this.context = canvas.getContext("webgpu") as GPUCanvasContext;
+		this.context.configure({
+			device,
+			format: canvasFormat,
 		});
+
+		this.shaderModule = device.createShaderModule({
+			label: "Triangle shader module",
+			code: /* wgsl */`
+				struct VertexInput {
+					@location(0) pos: vec2f,
+				};
+
+				@vertex
+				fn vertexMain(input: VertexInput) -> VertexOutput {
+					var output: VertexOutput;
+					output.pos = input.pos / vec2f(${CANVAS_WIDTH}, ${CANVAS_HEIGHT});
+					
+					return output;
+				}
+
+				@fragment
+				fn fragmentMain() -> @location(0) vec4f {
+					return vec4f(0, 0, 0, 1);
+				}
+			`
+		});
+
+		this.renderPipeline = this.device.createRenderPipeline({
+			label: "Cell pipeline",
+			layout: "auto",
+			vertex: {
+				module: this.shaderModule,
+				entryPoint: "vertexMain",
+				buffers: [{
+					arrayStride: 6,
+					attributes: [{
+						format: "float32x2",
+						offset: 0,
+						shaderLocation: 0, // Position, see vertex shader
+					}],
+				}]
+			},
+			fragment: {
+				module: this.shaderModule,
+				entryPoint: "vertexMain",
+				targets: [{
+					format: canvasFormat
+				}],
+			}
+		});
+
+		this.vertexBuffer = this.createVertexBuffer(32 * VERTEX_BUFFER_STARTING_LENGTH);
 	}
 
-	passTriangles(triangles: Point[][]) {
+	createVertexBuffer(size: number): GPUBuffer {
+		return this.device.createBuffer({
+			label: "Render triangle vertex buffer",
+			size: size,
+			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
+		})
+	}
+
+	resizeVertexBuffer(newMinSize: number) {
+		const currentSize = this.vertexBuffer.size;
+		const mul = 2^Math.ceil(Math.log2(newMinSize / currentSize))
+
+		this.vertexBuffer.destroy()
+		this.vertexBuffer = this.createVertexBuffer(currentSize * mul);
+	}
+
+	writeTriangles(triangles: Float32Array) {
+		this.numTriangles = triangles.byteLength / 32 / 3;
 		
+		if (this.vertexBuffer.size < triangles.byteLength) {
+			this.resizeVertexBuffer(triangles.byteLength);
+		}
+
+		this.device.queue.writeBuffer(this.vertexBuffer, 0, triangles);
+	}
+
+	render() {
+		const encoder = this.device.createCommandEncoder();
+
+		const renderPass = encoder.beginRenderPass({
+			colorAttachments: [{
+				view: this.context.getCurrentTexture().createView(),
+				loadOp: "clear",
+				clearValue: { r: 0, g: 0, b: 0, a: 1 }, // background color
+				storeOp: "store",
+			}]
+		});
+
+		renderPass.setPipeline(this.renderPipeline);
+		renderPass.setVertexBuffer(0, this.vertexBuffer);
+		renderPass.draw(3, this.numTriangles);
+
+		renderPass.end();
+
+		this.device.queue.submit([encoder.finish()]);
 	}
 
 	cleanup() {
-
+		this.vertexBuffer.destroy();
 	}
 
 	private vertexBuffer: GPUBuffer;
+	private shaderModule: GPUShaderModule;
+	private renderPipeline: GPURenderPipeline;
+	private context: GPUCanvasContext;
+	private numTriangles: number = 0;
 }
 
 export class PongRenderer {
@@ -95,56 +141,39 @@ export class PongRenderer {
 
 		let device = await gpuAdapter.requestDevice();
 		if (!device) throw Error("Unable to retrieve GPU Device.");
-		
-		const context = canvas.getContext("webgpu") as GPUCanvasContext;
-		context.configure({
-			device,
-			format: this.gpu.getPreferredCanvasFormat(),
-		});
 
-		this.gpuHandler = new GpuHandler(device);
-	}
-
-	renderPass() {
-		// for each object, convert it into triangles and add it too the vertex buffer and draw the triangle.
+		this.gpuHandler = new GpuHandler(device, canvas);
 	}
 	
-	// potentitally optimize by running on wasm or gpu
 	updateTriangles() {
-		let allTriangles: Point[][] = [];
+		let bufferLength = 0;
 
-		this.polygons.forEach((gameObject) => {
-			const polygonTriangles = calcTriangles(gameObject.shape as Polygon);
-			allTriangles.concat(polygonTriangles);
-		});	
+		// get total amount of vertices that will be added to buffer
+		this.objects.forEach((obj) => {
+			bufferLength += obj.shapeDescriptor.vertexCount;
+		});
 
-		this.gpuHandler?.passTriangles(allTriangles);
+		let vertexArray = new Float32Array(bufferLength);
+
+		// calculate triangles and write to vertex array
+		let vertexOffset = 0;
+		this.objects.forEach((obj) => {
+			obj.shapeDescriptor.writeTriangles(vertexArray, vertexOffset);
+			vertexOffset += obj.shapeDescriptor.vertexCount;
+		});
+
+		this.gpuHandler?.writeTriangles(vertexArray);
 	}
 
 	renderGameObject(object: GameObject) {
-		const shapeType = object.shape.tag;
-
-		if (shapeType === ShapeTag.Polygon) {
-			this.polygons.add(object);
-		} else if (shapeType === ShapeTag.Circle) {
-			this.circles.add(object);
-		} else {
-			throw Error("Could not render shape.");
-		}
+		this.objects.add(object);
 	}
 
 	unrenderGameObject(object: GameObject) {
-		if (object.shape.tag === ShapeTag.Polygon) {
-			this.polygons.delete(object)
-		} else if (object.shape.tag === ShapeTag.Circle) {
-			this.circles.delete(object)
-		} else {
-			throw Error("Shape does not exist.");
-		}
+		this.objects.delete(object);
 	}
 
-	private polygons = new Set<GameObject>;
-	private circles = new Set<GameObject>;
+	private objects = new Set<GameObject>;
 	private canvas: HTMLCanvasElement | undefined;
 	private gpu: GPU;
 

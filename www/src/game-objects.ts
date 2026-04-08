@@ -1,7 +1,8 @@
 import { matrix, Point, Vector, type Shape } from "2d-geometry";
+import type { ShapeDescriptor } from "./lib/rendering/shape-descriptors";
 
 export class GameObject {
-	constructor(private _shape: Shape) {
+	constructor(public readonly shapeDescriptor: ShapeDescriptor) {
 		this.acceleration = Vector.EMPTY;
 		this.velocity = Vector.EMPTY;
 	}
@@ -22,21 +23,18 @@ export class GameObject {
 		return this.velocity;
 	}
 
-	set position(p: Point) {
-		const translate = p.translate(this.shape.center.transform(matrix(0, 0, -1)))
-		this.shape.translate(translate);
+	set position(p: Point) {	
+		// move shape descriptor and bounding box
+		this.shapeDescriptor.center = p;
 	}
 
 	get position(): Point {
-		return this.shape.center;
-	}
-
-	get shape(): Shape {
-		return this._shape;
+		// todo: return bounding box center instead?
+		return this.shapeDescriptor.center;
 	}
 
 	movementStep(time: number) {
 		this.velocity = this.velocity.add(this.acceleration.multiply(time));
-		this.shape.translate(this.velocity.multiply(time));
+		this.shapeDescriptor.move(this.velocity.multiply(time));
 	}
 }
