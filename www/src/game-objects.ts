@@ -1,8 +1,10 @@
-import { matrix, Point, Vector, type Shape } from "2d-geometry";
+import { Box, matrix, Point, vector, Vector, type Shape } from "2d-geometry";
 import type { ShapeDescriptor } from "./lib/rendering/shape-descriptors";
 
 export class GameObject {
-	constructor(public readonly shapeDescriptor: ShapeDescriptor) { }
+	constructor(public readonly shapeDescriptor: ShapeDescriptor) {
+		this._aabb = shapeDescriptor.aabb;
+	}
 	
 	set acceleration(acc: Vector) {
 		this._acc = acc;
@@ -26,9 +28,14 @@ export class GameObject {
 	}
 
 	get position(): Point {
-		// todo: return bounding box center instead?
 		return this.shapeDescriptor.center;
 	}
+
+	get boundingBox(): Box {
+		const currentCenter = this._aabb.center;
+		this._aabb = this._aabb.translate(this.position.x - currentCenter.x, this.position.y - currentCenter.y);
+		return this._aabb;
+	}	
 
 	movementStep(time: number) {
 		this.velocity = this.velocity.add(this.acceleration.multiply(time));
@@ -37,4 +44,5 @@ export class GameObject {
 
 	private _acc: Vector = Vector.EMPTY;
 	private _vel: Vector = Vector.EMPTY;
+	private _aabb: Box = Box.EMPTY;
 }

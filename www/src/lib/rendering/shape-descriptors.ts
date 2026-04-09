@@ -1,10 +1,12 @@
-import { matrix, point, Point, segment, Vector, vector, type Circle, type Polygon } from "2d-geometry";
+import { Box, matrix, point, Point, segment, Vector, vector, type Circle, type Polygon } from "2d-geometry";
 
 export interface ShapeDescriptor {
 	get vertexCount(): number;
 	
 	get center(): Point;
 	set center(p: Point);
+
+	get aabb(): Box;
 
 	writeTriangles(arr: Float32Array<ArrayBufferLike>, offset: number): void;
 	move(v: Vector): void;
@@ -73,6 +75,10 @@ export class PolygonDescriptor implements ShapeDescriptor {
 		this.move(translate);
 	}
 
+	get aabb(): Box {
+		return this.shape.box;
+	}
+
 	move(v: Vector) {
 		this.shape = this.shape.translate(v);
 	}
@@ -84,10 +90,12 @@ export class CircleDescriptor implements ShapeDescriptor {
 
 	writeTriangles(arr: Float32Array<ArrayBufferLike>, offset: number): void { }
 
-	get vertexCount(): number { return 0 }
+	get vertexCount(): number { return 0; }
 
 	get center(): Point { return Point.EMPTY; }
 	set center(p: Point) { }
+
+	get aabb(): Box { return Box.EMPTY; }
 
 	move(v: Vector) { }
 }
