@@ -9,25 +9,9 @@ import { createContext, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { PongRenderer } from "./pong-renderer.ts";
-import { GameObject } from "./game-objects.ts";
-import { PolygonDescriptor } from "./lib/rendering/shape-descriptors.ts";
-import { rect, vector } from "2d-geometry";
 
 const renderer = new PongRenderer();
 export const rendererContext = createContext(renderer);
-
-const testRectangle = new GameObject(new PolygonDescriptor(rect(0, 256-50, 50, 50)));
-const testRectangle2 = new GameObject(new PolygonDescriptor(rect(100, 256-50, 60, 50)));
-testRectangle.acceleration = vector(-0, -50);
-renderer.renderGameObject(testRectangle);
-renderer.renderGameObject(testRectangle2);
-
-const UPDATE_TIME = .05
-
-setInterval(() => {
-  testRectangle.movementStep(UPDATE_TIME);
-  renderer.updateTriangles();
-}, 1/UPDATE_TIME);
 
 const elem = document.getElementById("root")!;
 const app = (
