@@ -11,10 +11,12 @@
     "build": "bun run build.ts & bun twbuild"
   },
   "dependencies": {
+    "2d-geometry": "^3.0.0",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",
     "@tailwindcss/cli": "^4.2.2",
+    "@webgpu/types": "^0.1.69",
     "bun-plugin-tailwind": "^0.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

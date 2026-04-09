@@ -5,14 +5,20 @@
  * It is included in `src/index.html`.
  */
 
-import { StrictMode } from "react";
+import { createContext, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
+import { PongRenderer } from "./pong-renderer.ts";
+
+const renderer = new PongRenderer();
+export const rendererContext = createContext(renderer);
 
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
-    <App />
+    <rendererContext.Provider value={renderer}>
+      <App />
+    </rendererContext.Provider>
   </StrictMode>
 );
 
