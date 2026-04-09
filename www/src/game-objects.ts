@@ -2,6 +2,9 @@ import { Box, matrix, Point, vector, Vector, type Shape } from "2d-geometry";
 import type { ShapeDescriptor } from "./lib/rendering/shape-descriptors";
 
 export class GameObject {
+	public readonly superHeavy = false;
+	public mass = 1;
+
 	constructor(public readonly shapeDescriptor: ShapeDescriptor) {
 		this._aabb = shapeDescriptor.aabb;
 	}
