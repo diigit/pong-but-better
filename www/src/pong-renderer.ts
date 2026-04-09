@@ -1,14 +1,22 @@
+import { ReceiptRussianRuble } from "lucide-react";
 import { GameObject } from "./game-objects";
 
 const CANVAS_WIDTH = 512;
 const CANVAS_HEIGHT = 256;
 const VERTEX_BUFFER_STARTING_LENGTH = 64; // 32 vertices
 
+let gpuAdapter = await window.navigator.gpu.requestAdapter();
+if (!gpuAdapter) throw Error("Unable to retrieve GPU Adapter.");
+
+let device = await gpuAdapter.requestDevice();
+if (!device) throw Error("Unable to retrieve GPU Device.");
+
 class GpuHandler {
-	constructor(private device: GPUDevice, canvas: HTMLCanvasElement) {
+	constructor(canvas: HTMLCanvasElement) {
 		const canvasFormat = window.navigator.gpu.getPreferredCanvasFormat();
 
 		this.context = canvas.getContext("webgpu") as GPUCanvasContext;
+
 		this.context.configure({
 			device,
 			format: canvasFormat,
@@ -21,10 +29,14 @@ class GpuHandler {
 					@location(0) pos: vec2f,
 				};
 
+				struct VertexOutput {
+					@builtin(position) pos: vec4f,
+				};
+
 				@vertex
 				fn vertexMain(input: VertexInput) -> VertexOutput {
 					var output: VertexOutput;
-					output.pos = input.pos / vec2f(${CANVAS_WIDTH}, ${CANVAS_HEIGHT});
+					output.pos = vec4f(input.pos, 0, 1);
 					
 					return output;
 				}
@@ -36,14 +48,17 @@ class GpuHandler {
 			`
 		});
 
-		this.renderPipeline = this.device.createRenderPipeline({
+		this.renderPipeline = device.createRenderPipeline({
 			label: "Cell pipeline",
 			layout: "auto",
+			primitive: { 
+				topology: "triangle-list", 
+			},
 			vertex: {
 				module: this.shaderModule,
 				entryPoint: "vertexMain",
 				buffers: [{
-					arrayStride: 6,
+					arrayStride: 8,
 					attributes: [{
 						format: "float32x2",
 						offset: 0,
@@ -53,7 +68,7 @@ class GpuHandler {
 			},
 			fragment: {
 				module: this.shaderModule,
-				entryPoint: "vertexMain",
+				entryPoint: "fragmentMain",
 				targets: [{
 					format: canvasFormat
 				}],
@@ -62,11 +77,16 @@ class GpuHandler {
 
 		this.vertexBuffer = this.createVertexBuffer(32 * VERTEX_BUFFER_STARTING_LENGTH);
 
-		this.renderLoopId = window.requestAnimationFrame(this.render)
+		const step = () => {
+			this.render()
+			this.renderLoopId = window.requestAnimationFrame(step);
+		}
+
+		this.renderLoopId = window.requestAnimationFrame(step);
 	}
 
 	createVertexBuffer(size: number): GPUBuffer {
-		return this.device.createBuffer({
+		return device.createBuffer({
 			label: "Render triangle vertex buffer",
 			size: size,
 			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
@@ -82,34 +102,33 @@ class GpuHandler {
 	}
 
 	writeTriangles(triangles: Float32Array) {
-		this.numTriangles = triangles.byteLength / 32 / 3;
+		this.numVertices = triangles.byteLength / 8;
 		
 		if (this.vertexBuffer.size < triangles.byteLength) {
 			this.resizeVertexBuffer(triangles.byteLength);
 		}
 
-		this.device.queue.writeBuffer(this.vertexBuffer, 0, triangles);
+		device.queue.writeBuffer(this.vertexBuffer, 0, triangles);
 	}
 
 	render() {
-		const encoder = this.device.createCommandEncoder();
+		const encoder = device.createCommandEncoder();
 
 		const renderPass = encoder.beginRenderPass({
 			colorAttachments: [{
 				view: this.context.getCurrentTexture().createView(),
 				loadOp: "clear",
-				clearValue: { r: 0, g: 0, b: 0, a: 1 }, // background color
+				clearValue: { r: 0, g: 0, b: 1, a: 1 }, // background color
 				storeOp: "store",
 			}]
 		});
 
 		renderPass.setPipeline(this.renderPipeline);
 		renderPass.setVertexBuffer(0, this.vertexBuffer);
-		renderPass.draw(3, this.numTriangles);
+		renderPass.draw(this.numVertices, 1, 0, 0);
 
 		renderPass.end();
-
-		this.device.queue.submit([encoder.finish()]);
+		device.queue.submit([encoder.finish()]);
 	}
 
 	cleanup() {
@@ -121,7 +140,7 @@ class GpuHandler {
 	private shaderModule: GPUShaderModule;
 	private renderPipeline: GPURenderPipeline;
 	private context: GPUCanvasContext;
-	private numTriangles: number = 0;
+	private numVertices: number = 0;
 	private renderLoopId: number;
 }
 
@@ -131,22 +150,18 @@ export class PongRenderer {
 		if (this.gpu === undefined) Error("WebGPU is not supported by this browser.");
 	}
 
-	async setCanvas(canvas: HTMLCanvasElement | undefined) {
-		this.canvas = canvas;
-
+	setCanvas(canvas: HTMLCanvasElement | undefined) {
 		if (canvas === undefined) {
 			// TODO cleanup
+			this.canvas = undefined;
 			this.gpuHandler?.cleanup();
 			return;
 		}
 
-		let gpuAdapter = await this.gpu.requestAdapter();
-		if (!gpuAdapter) throw Error("Unable to retrieve GPU Adapter.");
+		if (canvas === this.canvas as Node) return;
 
-		let device = await gpuAdapter.requestDevice();
-		if (!device) throw Error("Unable to retrieve GPU Device.");
-
-		this.gpuHandler = new GpuHandler(device, canvas);
+		this.canvas = canvas;
+		this.gpuHandler = new GpuHandler(canvas);
 	}
 	
 	updateTriangles() {
@@ -157,13 +172,13 @@ export class PongRenderer {
 			bufferLength += obj.shapeDescriptor.vertexCount;
 		});
 
-		let vertexArray = new Float32Array(bufferLength);
+		let vertexArray = new Float32Array(bufferLength * 2);
 
 		// calculate triangles and write to vertex array
 		let vertexOffset = 0;
 		this.objects.forEach((obj) => {
 			obj.shapeDescriptor.writeTriangles(vertexArray, vertexOffset);
-			vertexOffset += obj.shapeDescriptor.vertexCount;
+			vertexOffset += obj.shapeDescriptor.vertexCount * 2;
 		});
 
 		this.gpuHandler?.writeTriangles(vertexArray);
