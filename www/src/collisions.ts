@@ -32,12 +32,45 @@ export class Collisions {
 		const overlapX = Math.min(aabbA.xmax, aabbB.xmax) - Math.max(aabbA.xmin, aabbB.xmin);
 		const overlapY = Math.min(aabbA.ymax, aabbB.ymax) - Math.max(aabbA.ymin, aabbB.ymin);
 
-		return overlapX > overlapY ? vector(0, overlapY) : vector(overlapX, 0);
+		const axisIsX = overlapX < overlapY;
+		let sign = 1;
+
+		if (axisIsX) {
+			sign = Math.sign(aabbA.center.x - aabbB.center.x);
+		} else {
+			sign = Math.sign(aabbA.center.y - aabbB.center.y);
+		}
+
+		return (overlapX > overlapY ? vector(0, overlapY) : vector(overlapX, 0)).multiply(sign);
 	}
 
 	transferMomentum(objectA: GameObject, objectB: GameObject) {
-		// TODO changes velocity of object A and object B based on what side they collide on and their respective masses
+		if (objectA.superHeavy && objectB.superHeavy) return;
+
+		let moveA = 0;
+		let moveB = 0;
+
+		if (objectA.superHeavy) {
+			moveB = 1;
+		} else if (objectB.superHeavy) {
+			moveA = 1;
+		} else {
+			const totalMass = objectA.mass + objectB.mass;
+			moveA = objectA.mass / totalMass;
+			moveB = moveA - 1;
+		}
 		
+		const penVec = this.calcPenetrationVec(objectA, objectB);
+		
+		let moveVecA = penVec.multiply(moveA);
+		let moveVecB = penVec.multiply(moveB);
+
+		objectA.shapeDescriptor.move(moveVecA);
+		objectB.shapeDescriptor.move(moveVecB);
+
+		let avgVelocity = objectA.velocity.add(objectB.velocity).multiply(0.5);
+		objectA.velocity = avgVelocity.multiply(moveA);
+		objectB.velocity = avgVelocity.multiply(moveB);
 	}
 
 	addCollider(obj: GameObject) {
