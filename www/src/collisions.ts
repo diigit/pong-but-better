@@ -1,50 +1,68 @@
 // Singleton that handles collisions
 
-import { box, Vector, vector } from "2d-geometry";
+import { Box, box, Vector, vector } from "2d-geometry";
 import { GameObject } from "./game-objects";
 
-type CollisionsSet = Set<[a: GameObject, b: GameObject]>;
+function calcCollision(a: Box, b: Box): { colliding: boolean, vector: Vector } {
+	const differences = [
+		a.xmax - b.xmin, 
+		a.ymax - b.ymin, 
+		a.xmin - b.xmax, 
+		a.ymin - b.ymax
+	] as const;
 
-export class Collisions {
+	const isColliding = 
+		Math.sign(differences[2]) !== Math.sign(differences[0]) && 
+		Math.sign(differences[1]) !== Math.sign(differences[3]);
+
+	if (isColliding === false) 
+		return { 
+			colliding: false, 
+			vector: Vector.EMPTY 
+		};
+
+	let rotation = 0;
+	let min = Infinity;
+
+	differences.forEach((diff, index) => {
+		if (Math.abs(diff) < min) {
+			min = diff;
+			rotation = index;
+		}
+	})
+
+	return {
+		colliding: isColliding,
+		vector: rotation % 2 === 0 ? vector(min, 0) : vector(0, min),
+	};
+}
+
+export class AABBCollider {
 	// TODO: optimize from O(n^2) to O(nlog(n))
 	// TODO: minowski difference to detect collisions 
 	// detect their direction too
-	calcCollisions(): CollisionsSet {
+
+	updateColliders() {
 		let checkedObects = new Set<GameObject>;
-		let collisions = new Set<[a: GameObject, b: GameObject]>;
 
 		this.colliders.forEach((obj) => {
 			this.colliders.forEach((other) => {
-				if (checkedObects.has(other)) return;
-				if (obj.boundingBox.intersect(other.boundingBox)) collisions.add([obj, other]);
+				if (obj === other || checkedObects.has(other)) return;
+				this.simulateCollision(obj, other);
 			})
 
 			checkedObects.add(obj);
 		})
-
-		return collisions;
 	}
 
-	calcPenetrationVec(objA: GameObject, objB: GameObject) {
-		const aabbA = objA.boundingBox;
-		const aabbB = objB.boundingBox;
+	simulateCollision(a: GameObject, b: GameObject) {
+		const { colliding, vector } = calcCollision(a.boundingBox, b.boundingBox);
+		if (colliding === false) return;
 
-		const overlapX = Math.min(aabbA.xmax, aabbB.xmax) - Math.max(aabbA.xmin, aabbB.xmin);
-		const overlapY = Math.min(aabbA.ymax, aabbB.ymax) - Math.max(aabbA.ymin, aabbB.ymin);
-
-		const axisIsX = overlapX < overlapY;
-		let sign = 1;
-
-		if (axisIsX) {
-			sign = Math.sign(aabbA.center.x - aabbB.center.x);
-		} else {
-			sign = Math.sign(aabbA.center.y - aabbB.center.y);
-		}
-
-		return (overlapX > overlapY ? vector(0, overlapY) : vector(overlapX, 0)).multiply(sign);
+		console.log("Colliding. Vector: \n", vector);
 	}
 
-	transferMomentum(objectA: GameObject, objectB: GameObject) {
+	/*transferMomentum(objectA: GameObject, objectB: GameObject) {
 		if (objectA.superHeavy && objectB.superHeavy) return;
 
 		let moveA = 0;
@@ -71,7 +89,7 @@ export class Collisions {
 		let avgVelocity = objectA.velocity.add(objectB.velocity).multiply(0.5);
 		objectA.velocity = avgVelocity.multiply(moveA);
 		objectB.velocity = avgVelocity.multiply(moveB);
-	}
+	}*/
 
 	addCollider(obj: GameObject) {
 		this.colliders.add(obj);

@@ -9,10 +9,15 @@ import { createContext, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { PongRenderer } from "./pong-renderer.ts";
+import { AABBCollider } from "./collisions.ts";
+import { GameObject } from "./game-objects.ts";
+import { PolygonDescriptor } from "./lib/rendering/shape-descriptors.ts";
+import { rect, vector } from "2d-geometry";
 
 const renderer = new PongRenderer();
-export const rendererContext = createContext(renderer);
+const collider = new AABBCollider();
 
+export const rendererContext = createContext(renderer);
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
@@ -29,4 +34,28 @@ if (import.meta.hot) {
 } else {
   // The hot module reloading API is not available in production.
   createRoot(elem).render(app);
+}
+
+// object collision test
+{
+  const UPDATE_INTERVAL = 50; //ms
+  
+  const objectA = new GameObject(new PolygonDescriptor(rect(-256, -64, 128, 128)));
+  objectA.mass = 2;
+  objectA.velocity = vector(30, 0);
+  renderer.renderGameObject(objectA);
+  collider.addCollider(objectA);
+
+  const objectB = new GameObject(new PolygonDescriptor(rect(256, -64, 128, 128)));
+  objectB.mass = 1;
+  objectB.velocity = vector(-30, 0);
+  renderer.renderGameObject(objectB);
+  collider.addCollider(objectB);
+
+  setInterval(() => {
+    objectA.movementStep(UPDATE_INTERVAL/1000);
+    objectB.movementStep(UPDATE_INTERVAL/1000);
+    collider.updateColliders();
+    renderer.updateTriangles();
+  }, UPDATE_INTERVAL);
 }
