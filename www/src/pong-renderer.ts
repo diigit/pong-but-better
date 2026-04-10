@@ -1,8 +1,5 @@
-import { ReceiptRussianRuble } from "lucide-react";
 import { GameObject } from "./game-objects";
 
-const CANVAS_WIDTH = 512;
-const CANVAS_HEIGHT = 256;
 const VERTEX_BUFFER_STARTING_LENGTH = 64; // 32 vertices
 
 let gpuAdapter = await window.navigator.gpu.requestAdapter();
