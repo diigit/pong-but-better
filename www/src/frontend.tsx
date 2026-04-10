@@ -37,7 +37,7 @@ if (import.meta.hot) {
 }
 
 // object collision test
-{
+/* {
   const UPDATE_INTERVAL = 10; //ms
   
   const objectA = new GameObject(new PolygonDescriptor(rect(-256, -32, 64, 64)));
@@ -59,4 +59,4 @@ if (import.meta.hot) {
     collider.updateColliders();
     renderer.updateTriangles();
   }, UPDATE_INTERVAL);
-}
+} */
