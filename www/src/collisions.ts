@@ -136,7 +136,7 @@ export class AABBCollider {
 				obj.shapeDescriptor.move(vector(0, diffMin));
 			}
 
-			obj.velocity = vector(-obj.velocity.x, obj.velocity.y);
+			obj.velocity = vector(obj.velocity.x, -obj.velocity.y);
 		}
 	}
 
