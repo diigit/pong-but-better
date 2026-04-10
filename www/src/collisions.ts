@@ -39,9 +39,6 @@ function calcCollision(a: Box, b: Box): { colliding: boolean, vector: Vector } {
 
 export class AABBCollider {
 	// TODO: optimize from O(n^2) to O(nlog(n))
-	// TODO: minowski difference to detect collisions 
-	// detect their direction too
-
 	updateColliders() {
 		let checkedObects = new Set<GameObject>;
 
@@ -59,37 +56,16 @@ export class AABBCollider {
 		const { colliding, vector } = calcCollision(a.boundingBox, b.boundingBox);
 		if (colliding === false) return;
 
-		console.log("Colliding. Vector: \n", vector);
+		console.log(`[COLLIDE] ${vector}`);
+
+		const x1 = (a.mass - b.mass)/(a.mass + b.mass)
+
+		const vAF = a.velocity.multiply(x1).add(b.velocity.multiply((2*b.mass)/(a.mass + b.mass)));
+		const vBF = b.velocity.multiply(-x1).add(a.velocity.multiply((2*a.mass)/(a.mass + b.mass)));
+
+		a.velocity = vAF;
+		b.velocity = vBF;
 	}
-
-	/*transferMomentum(objectA: GameObject, objectB: GameObject) {
-		if (objectA.superHeavy && objectB.superHeavy) return;
-
-		let moveA = 0;
-		let moveB = 0;
-
-		if (objectA.superHeavy) {
-			moveB = 1;
-		} else if (objectB.superHeavy) {
-			moveA = 1;
-		} else {
-			const totalMass = objectA.mass + objectB.mass;
-			moveA = objectA.mass / totalMass;
-			moveB = moveA - 1;
-		}
-		
-		const penVec = this.calcPenetrationVec(objectA, objectB);
-		
-		let moveVecA = penVec.multiply(moveA);
-		let moveVecB = penVec.multiply(moveB);
-
-		objectA.shapeDescriptor.move(moveVecA);
-		objectB.shapeDescriptor.move(moveVecB);
-
-		let avgVelocity = objectA.velocity.add(objectB.velocity).multiply(0.5);
-		objectA.velocity = avgVelocity.multiply(moveA);
-		objectB.velocity = avgVelocity.multiply(moveB);
-	}*/
 
 	addCollider(obj: GameObject) {
 		this.colliders.add(obj);

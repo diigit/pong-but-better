@@ -20,6 +20,7 @@ class GpuHandler {
 		this.context.configure({
 			device,
 			format: canvasFormat,
+			alphaMode: "premultiplied",
 		});
 
 		this.shaderModule = device.createShaderModule({
@@ -118,7 +119,7 @@ class GpuHandler {
 			colorAttachments: [{
 				view: this.context.getCurrentTexture().createView(),
 				loadOp: "clear",
-				clearValue: { r: 0, g: 0, b: 1, a: 1 }, // background color
+				clearValue: { r: 0, g: 0, b: 0, a: 0 }, // background color
 				storeOp: "store",
 			}]
 		});
