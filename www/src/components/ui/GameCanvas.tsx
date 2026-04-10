@@ -1,3 +1,4 @@
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "@/constants";
 import { rendererContext } from "@/frontend";
 import React from "react";
 
@@ -37,12 +38,14 @@ export function GameCanvas() {
 
 	const randomText = titleTextArr[Math.floor(Math.random() * titleTextArr.length)];
 
+	const canvasStyle = `w-${CANVAS_WIDTH/4} h-${CANVAS_HEIGHT/4} m-2.5 rounded-b-[7px]` 
+
 	return (
 		<div className="flex flex-col bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl backdrop-blur-sm border-2 border-white/20 overflow-hidden">
 			<div className="px-4 py-2 bg-white/30">
 				<p className="font-pixel text-xl text-title">{beCool ? randomText : "Pong Window"}</p>
 			</div>
-			<canvas className="w-lg h-64 m-2.5 rounded-b-[7px]" ref={canvasElementRef}/>
+			<canvas className={canvasStyle} ref={canvasElementRef}/>
 		</div>
 	)
 }
