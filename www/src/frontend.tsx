@@ -38,17 +38,18 @@ if (import.meta.hot) {
 
 // object collision test
 {
-  const UPDATE_INTERVAL = 50; //ms
+  const UPDATE_INTERVAL = 10; //ms
   
   const objectA = new GameObject(new PolygonDescriptor(rect(-256, -32, 64, 64)));
-  objectA.mass = 1;
-  objectA.velocity = vector(200, 0);
+  objectA.mass = 3;
+  objectA.velocity = vector(0, 0);
   renderer.renderGameObject(objectA);
   collider.addCollider(objectA);
 
-  const objectB = new GameObject(new PolygonDescriptor(rect(256, -32, 64, 64)));
+  const objectB = new GameObject(new PolygonDescriptor(rect(-256+32+100, -32, 64, 64)));
   objectB.mass = 1;
-  objectB.velocity = vector(-1000, -30);
+  objectB.superHeavy = true;
+  objectB.velocity = vector(-75, -30);
   renderer.renderGameObject(objectB);
   collider.addCollider(objectB);
 

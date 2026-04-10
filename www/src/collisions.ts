@@ -4,38 +4,38 @@ import { Box, box, Vector, vector } from "2d-geometry";
 import { GameObject } from "./game-objects";
 
 function calcCollision(a: Box, b: Box): { colliding: boolean, vector: Vector } {
-	const differences = [
-		a.xmax - b.xmin, 
-		a.ymax - b.ymin, 
-		a.xmin - b.xmax, 
-		a.ymin - b.ymax
-	] as const;
+			const differences = [
+				a.xmax - b.xmin, 
+				a.ymax - b.ymin, 
+				a.xmin - b.xmax, 
+				a.ymin - b.ymax
+			] as const;
 
-	const isColliding = 
-		Math.sign(differences[2]) !== Math.sign(differences[0]) && 
-		Math.sign(differences[1]) !== Math.sign(differences[3]);
+			const isColliding = 
+				Math.sign(differences[2]) !== Math.sign(differences[0]) && 
+				Math.sign(differences[1]) !== Math.sign(differences[3]);
 
-	if (isColliding === false) 
-		return { 
-			colliding: false, 
-			vector: Vector.EMPTY 
-		};
+			if (isColliding === false) 
+				return { 
+					colliding: false, 
+					vector: Vector.EMPTY 
+				};
 
-	let rotation = 0;
-	let min = Infinity;
+			let rotation = 0;
+			let min = Infinity;
 
-	differences.forEach((diff, index) => {
-		if (Math.abs(diff) < min) {
-			min = diff;
-			rotation = index;
+			differences.forEach((diff, index) => {
+				if (Math.abs(diff) < min) {
+					min = diff;
+					rotation = index;
+				}
+			})
+
+			return {
+				colliding: isColliding,
+				vector: rotation % 2 === 0 ? vector(min, 0) : vector(0, min),
+			};
 		}
-	})
-
-	return {
-		colliding: isColliding,
-		vector: rotation % 2 === 0 ? vector(min, 0) : vector(0, min),
-	};
-}
 
 export class AABBCollider {
 	// TODO: optimize from O(n^2) to O(nlog(n))
@@ -56,7 +56,23 @@ export class AABBCollider {
 		const { colliding, vector } = calcCollision(a.boundingBox, b.boundingBox);
 		if (colliding === false) return;
 
-		console.log(`[COLLIDE] ${vector}`);
+		console.log("[COLLIDE]", vector);
+		
+		if (a.superHeavy && b.superHeavy) return;
+
+		if (a.superHeavy) {
+			b.shapeDescriptor.move(vector);
+			b.velocity = b.velocity.multiply(-1);
+			return;
+		}
+
+		if (b.superHeavy) {
+			a.shapeDescriptor.move(vector.multiply(-1));
+			a.velocity = a.velocity.multiply(-1);
+			return;
+		}
+
+		b.shapeDescriptor.move(vector);
 
 		const x1 = (a.mass - b.mass)/(a.mass + b.mass)
 
