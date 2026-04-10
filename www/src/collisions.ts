@@ -1,6 +1,6 @@
 // Singleton that handles collisions
 
-import { vector } from "2d-geometry";
+import { box, Vector, vector } from "2d-geometry";
 import { GameObject } from "./game-objects";
 
 type CollisionsSet = Set<[a: GameObject, b: GameObject]>;
@@ -25,8 +25,19 @@ export class Collisions {
 		return collisions;
 	}
 
+	calcPenetrationVec(objA: GameObject, objB: GameObject) {
+		const aabbA = objA.boundingBox;
+		const aabbB = objB.boundingBox;
+
+		const overlapX = Math.min(aabbA.xmax, aabbB.xmax) - Math.max(aabbA.xmin, aabbB.xmin);
+		const overlapY = Math.min(aabbA.ymax, aabbB.ymax) - Math.max(aabbA.ymin, aabbB.ymin);
+
+		return overlapX > overlapY ? vector(0, overlapY) : vector(overlapX, 0);
+	}
+
 	transferMomentum(objectA: GameObject, objectB: GameObject) {
 		// TODO changes velocity of object A and object B based on what side they collide on and their respective masses
+		
 	}
 
 	addCollider(obj: GameObject) {
