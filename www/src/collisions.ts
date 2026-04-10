@@ -4,42 +4,58 @@ import { Box, box, Vector, vector } from "2d-geometry";
 import { GameObject } from "./game-objects";
 import { Evt } from "evt";
 
-function calcCollision(a: Box, b: Box): { colliding: boolean, vector: Vector } {
-			const differences = [
-				a.xmax - b.xmin, 
-				a.ymax - b.ymin, 
-				a.xmin - b.xmax, 
-				a.ymin - b.ymax
-			] as const;
+export enum Axis {
+	X,
+	Y,
+}
 
-			const isColliding = 
-				Math.sign(differences[2]) !== Math.sign(differences[0]) && 
-				Math.sign(differences[1]) !== Math.sign(differences[3]);
+export class Barrier {
+	constructor(
+		public readonly axis: Axis,
+		public readonly value: number,
+	) { }
+}
 
-			if (isColliding === false) 
-				return { 
-					colliding: false, 
-					vector: Vector.EMPTY 
-				};
+function calcCollision(a: Box, b: Box): { 
+	colliding: boolean, 
+	vector: Vector 
+} {
+	const differences = [
+		a.xmax - b.xmin, 
+		a.ymax - b.ymin, 
+		a.xmin - b.xmax, 
+		a.ymin - b.ymax
+	] as const;
 
-			let rotation = 0;
-			let min = Infinity;
+	const isColliding = 
+		Math.sign(differences[2]) !== Math.sign(differences[0]) && 
+		Math.sign(differences[1]) !== Math.sign(differences[3]);
 
-			differences.forEach((diff, index) => {
-				if (Math.abs(diff) < min) {
-					min = diff;
-					rotation = index;
-				}
-			})
+	if (isColliding === false) 
+		return { 
+			colliding: false, 
+			vector: Vector.EMPTY 
+		};
 
-			return {
-				colliding: isColliding,
-				vector: rotation % 2 === 0 ? vector(min, 0) : vector(0, min),
-			};
+	let rotation = 0;
+	let min = Infinity;
+
+	differences.forEach((diff, index) => {
+		if (Math.abs(diff) < min) {
+			min = diff;
+			rotation = index;
 		}
+	})
+
+	return {
+		colliding: isColliding,
+		vector: rotation % 2 === 0 ? vector(min, 0) : vector(0, min),
+	};
+}
 
 export class AABBCollider {
-	public readonly collisionOccured = Evt.create<[a: GameObject, b: GameObject]>();
+	public readonly objectCollisionOccured = Evt.create<[a: GameObject, b: GameObject]>();
+	public readonly barrierCollisionOccured = Evt.create<[object: GameObject, barrier: Barrier]>();
 
 	// TODO: optimize from O(n^2) to O(nlog(n))
 	updateColliders() {
@@ -49,7 +65,11 @@ export class AABBCollider {
 			this.colliders.forEach((other) => {
 				if (obj === other || checkedObects.has(other)) return;
 				this.simulateCollision(obj, other);
-			})
+			});
+
+			this.barriers.forEach((barrier) => {
+				this.simulateBarrierCollision(obj, barrier);
+			});
 
 			checkedObects.add(obj);
 		})
@@ -59,7 +79,7 @@ export class AABBCollider {
 		const { colliding, vector } = calcCollision(a.boundingBox, b.boundingBox);
 		if (colliding === false) return;
 
-		this.collisionOccured.post([a, b]);
+		this.objectCollisionOccured.post([a, b]);
 
 		console.log("[COLLIDE]", vector);
 		
@@ -88,6 +108,46 @@ export class AABBCollider {
 		b.velocity = vBF;
 	}
 
+	simulateBarrierCollision(obj: GameObject, barrier: Barrier) {
+		if (barrier.axis === Axis.X) {
+			const diffMax = barrier.value - obj.boundingBox.xmax;
+			const diffMin = barrier.value - obj.boundingBox.xmin;
+
+			if (Math.sign(diffMax) === Math.sign(diffMin)) return;
+			this.barrierCollisionOccured.post([obj, barrier]);
+
+			if (Math.abs(diffMax) < Math.abs(diffMin)) {
+				obj.shapeDescriptor.move(vector(diffMax, 0));
+			} else {
+				obj.shapeDescriptor.move(vector(diffMin, 0));
+			}
+
+			obj.velocity = vector(-obj.velocity.x, obj.velocity.y);
+		} else {
+			const diffMax = barrier.value - obj.boundingBox.ymax;
+			const diffMin = barrier.value - obj.boundingBox.ymin;
+			
+			if (Math.sign(diffMax) === Math.sign(diffMin)) return;
+			this.barrierCollisionOccured.post([obj, barrier]);
+
+			if (Math.abs(diffMax) < Math.abs(diffMin)) {
+				obj.shapeDescriptor.move(vector(0, diffMax));
+			} else {
+				obj.shapeDescriptor.move(vector(0, diffMin));
+			}
+
+			obj.velocity = vector(-obj.velocity.x, obj.velocity.y);
+		}
+	}
+
+	addBarrier(barrier: Barrier) {
+		this.barriers.add(barrier);
+	}
+
+	removeBarrier(barrier: Barrier) {
+		this.barriers.delete(barrier);
+	}
+
 	addCollider(obj: GameObject) {
 		this.colliders.add(obj);
 	}
@@ -97,4 +157,5 @@ export class AABBCollider {
 	}
 
 	private colliders = new Set<GameObject>;
+	private barriers = new Set<Barrier>();
 }
