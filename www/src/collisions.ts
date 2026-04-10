@@ -2,6 +2,7 @@
 
 import { Box, box, Vector, vector } from "2d-geometry";
 import { GameObject } from "./game-objects";
+import { Evt } from "evt";
 
 function calcCollision(a: Box, b: Box): { colliding: boolean, vector: Vector } {
 			const differences = [
@@ -38,6 +39,8 @@ function calcCollision(a: Box, b: Box): { colliding: boolean, vector: Vector } {
 		}
 
 export class AABBCollider {
+	public readonly collisionOccured = Evt.create<[a: GameObject, b: GameObject]>();
+
 	// TODO: optimize from O(n^2) to O(nlog(n))
 	updateColliders() {
 		let checkedObects = new Set<GameObject>;
@@ -55,6 +58,8 @@ export class AABBCollider {
 	simulateCollision(a: GameObject, b: GameObject) {
 		const { colliding, vector } = calcCollision(a.boundingBox, b.boundingBox);
 		if (colliding === false) return;
+
+		this.collisionOccured.post([a, b]);
 
 		console.log("[COLLIDE]", vector);
 		
