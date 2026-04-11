@@ -31,7 +31,7 @@ export class GameState {
 
 			if (paddle === undefined) return;
 
-			this.ball.velocity = this.ball.velocity.add(new Vector(40, paddle.velocity.y * .5));
+			this.ball.velocity = this.ball.velocity.add(new Vector(this.ball.velocity.x/75, paddle.velocity.y * .5));
 		})
 
 		this.paddleRight = new GameObject(new PolygonDescriptor(paddleShape));

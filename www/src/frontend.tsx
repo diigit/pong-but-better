@@ -17,14 +17,15 @@ import { GameState } from "./game-state.ts";
 
 const renderer = new PongRenderer();
 const collider = new AABBCollider();
+const gameState = new GameState(renderer, collider);
 
-export const rendererContext = createContext(renderer);
+export const dependencyContext = createContext({ renderer, gameState });
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
-    <rendererContext.Provider value={renderer}>
+    <dependencyContext.Provider value={{ renderer, gameState }}>
       <App />
-    </rendererContext.Provider>
+    </dependencyContext.Provider>
   </StrictMode>
 );
 
@@ -74,8 +75,6 @@ if (import.meta.hot) {
 // game state test
 {
   const UPDATE_INTERVAL = 10; //ms
-
-  const gameState = new GameState(renderer, collider);
 
   setInterval(() => {
     gameState.moveStep(UPDATE_INTERVAL/1000);

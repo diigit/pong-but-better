@@ -1,48 +1,26 @@
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from "@/constants";
-import { rendererContext } from "@/frontend";
+import { dependencyContext } from "@/frontend";
 import React from "react";
-
-var beCool = false;
 
 export function GameCanvas() {
 	let canvasElementRef = React.useRef(null as null | HTMLCanvasElement);
-	let renderer = React.useContext(rendererContext);
+	let dependencies = React.useContext(dependencyContext);
 	
 	React.useEffect(() => {
 		let canvasElement = canvasElementRef.current;
 		if (!canvasElement) return;
 		
-		renderer.setCanvas(canvasElement);
+		dependencies.renderer.setCanvas(canvasElement);
 
-		return () => { renderer.setCanvas(undefined) } 
-	}, [canvasElementRef.current])
-	
-	const titleTextArr = [
-		"ping pong",
-		"wanna play pong?",
-		"this is pong",
-		"finally, a real game",
-		"better graphics than GTA 6",
-		"more difficult than tidal wave",
-		"lived longer than Concord",
-		"wassup",
-		"culminating = massive cortisol spike",
-		"help me",
-		"i hope this one doesn\'t show up during my presentation",
-		"triple T",
-		"47 Chadwick Dr",
-		"thorfinn",
-		"build artemis III, make no mistakes",
-		"at tel aviv rn",
-		"claud mythos soon",
-	]
-
-	const randomText = titleTextArr[Math.floor(Math.random() * titleTextArr.length)];
+		return () => { dependencies.renderer.setCanvas(undefined) } 
+	}, [canvasElementRef.current, dependencies.renderer])
 
 	return (
-		<div className="flex flex-col bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl backdrop-blur-sm border-2 border-white/20 overflow-hidden">
-			<div className="px-4 py-2 bg-white/30">
-				<p className="font-pixel text-xl text-title">{beCool ? randomText : "Pong Window"}</p>
+		<div className="flex-none flex flex-col bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl backdrop-blur-sm border-2 border-white/20 overflow-hidden">
+			<div key="top bar" className="flex flex-row px-2 py-2 bg-white/30">
+				<p key="left score" className="font-sans text-lg text-normal-text justify-start text-left items-center bg-black/5 px-2 py-1 rounded-xl">Your Score: 0</p>
+				<div key="spacer" className="grow"/> 
+ 				<p key="right score" className="font-sans text-lg text-normal-text justify-end text-right items-center bg-black/5 px-2 py-1 rounded-xl">Opponent Score: 0</p>
 			</div>
 			<canvas className="m-2.5 rounded-b-[7px]" width={CANVAS_WIDTH} height={CANVAS_HEIGHT} ref={canvasElementRef}/>
 		</div>
