@@ -5,10 +5,12 @@ import { BALL_WAIT_TIME, CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors";
 import type { PongRenderer } from "./pong-renderer";
 import { Evt } from "evt";
+import { act } from "react";
 
 export class GameState {
 	public readonly selfScoreChanged = Evt.create<number>();
 	public readonly oppScoreChanged = Evt.create<number>();
+	public readonly gameActivityChanged = Evt.create<boolean>();
 
 	public winningScore = DEFAULT_WINNING_SCORE;
 	
@@ -38,8 +40,8 @@ export class GameState {
 	}
 
 	start() {
-		if (this.isPlaying) return;
-		this.isPlaying = true;
+		if (this.isGameActive) return;
+		this.isGameActive = true;
 
 		this.selfScore = 0;
 		this.oppScore = 0;
@@ -49,7 +51,7 @@ export class GameState {
 	}
 
 	moveStep(deltaTime: number) {
-		if (!this.isPlaying) return;
+		if (!this.isGameActive) return;
 
 		this.paddleLeft.step(deltaTime);
 		this.ball.movementStep(deltaTime);
@@ -57,8 +59,8 @@ export class GameState {
 	}
 
 	end() {
-		if (!this.isPlaying) return;
-		this.isPlaying = false;
+		if (!this.isGameActive) return;
+		this.isGameActive = false;
 
 		window.removeEventListener("keydown", this.keyDownFn);
 		window.removeEventListener("keyup", this.keyUpFn);
@@ -71,9 +73,24 @@ export class GameState {
 		this.ball.velocity = Vector.EMPTY;
 		this.ball.position = Point.EMPTY;
 
-		setTimeout(() => {
-			this.ball.velocity = vector(DEFAULT_BALL_SPEED * (this._selfScore > this._oppScore ? -1 : 1), 0);
-		}, BALL_WAIT_TIME * 1000)
+		if (this.selfScore >= this.winningScore || this.oppScore >= this.winningScore) {
+			this.end();
+		} else {
+			setTimeout(() => {
+				this.ball.velocity = vector(DEFAULT_BALL_SPEED * (this._selfScore > this._oppScore ? -1 : 1), 0);
+			}, BALL_WAIT_TIME * 1000)
+		}
+	}
+
+	get isGameActive() {
+		return this._isGameActive;
+	}
+
+	set isGameActive(active: boolean) {
+		if (active === this.isGameActive) return;
+
+		this._isGameActive = active;
+		this.gameActivityChanged.post(active);
 	}
 
 	get selfScore(): number {
@@ -146,7 +163,7 @@ export class GameState {
 	private barriers: Barrier[];
 	private barrierCollisionEvent;
 	private objectCollisionEvent;
-	private isPlaying = false;
+	private _isGameActive = false;
 
 	private _selfScore: number = 0;
 	private _oppScore: number = 0;
