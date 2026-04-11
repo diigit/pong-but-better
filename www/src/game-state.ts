@@ -1,14 +1,14 @@
 import { Point, point, rect, Vector, vector } from "2d-geometry";
 import { AABBCollider, Axis, Barrier } from "./collisions";
 import { GameObject } from "./game-objects";
-import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_MOVE_SPEED, DEFAULT_PADDLE_WIDTH, PADDLE_EDGE_MARGIN } from "./constants";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT_BALL_SPEED, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_MOVE_SPEED, DEFAULT_PADDLE_WIDTH, PADDLE_EDGE_MARGIN } from "./constants";
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors";
 import type { PongRenderer } from "./pong-renderer";
 
 export class GameState {
 	constructor(renderer: PongRenderer, collider: AABBCollider) {
 		this.ball = new GameObject(new PolygonDescriptor(rect(-DEFAULT_BALL_SIZE/2, -DEFAULT_BALL_SIZE/2, DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE)));
-		this.ball.velocity = vector(DEFAULT_PADDLE_MOVE_SPEED, 50);
+		this.ball.velocity = vector(DEFAULT_BALL_SPEED, 50);
 		renderer.renderGameObject(this.ball);
 		collider.addCollider(this.ball);
 		
