@@ -9,10 +9,11 @@ import { createContext, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { PongRenderer } from "./pong-renderer.ts";
-import { AABBCollider } from "./collisions.ts";
+import { AABBCollider, Axis, Barrier } from "./collisions.ts";
 import { GameObject } from "./game-objects.ts";
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors.ts";
 import { rect, vector } from "2d-geometry";
+import { GameState } from "./game-state.ts";
 
 const renderer = new PongRenderer();
 const collider = new AABBCollider();
@@ -37,7 +38,7 @@ if (import.meta.hot) {
 }
 
 // object collision test
-/* {
+/*{
   const UPDATE_INTERVAL = 10; //ms
   
   const objectA = new GameObject(new PolygonDescriptor(rect(-256, -32, 64, 64)));
@@ -46,12 +47,21 @@ if (import.meta.hot) {
   renderer.renderGameObject(objectA);
   collider.addCollider(objectA);
 
-  const objectB = new GameObject(new PolygonDescriptor(rect(-256+32+100, -32, 64, 64)));
+  const objectB = new GameObject(new PolygonDescriptor(rect(256, -32, 64, 64)));
   objectB.mass = 1;
-  objectB.superHeavy = true;
-  objectB.velocity = vector(-75, -30);
+  objectB.velocity = vector(-1000, -30);
+  objectB.acceleration = vector(0, -5000);
   renderer.renderGameObject(objectB);
   collider.addCollider(objectB);
+
+  const barrier1 = new Barrier(Axis.X, -512);
+  collider.addBarrier(barrier1);
+  const barrier2 = new Barrier(Axis.X, 512);
+  collider.addBarrier(barrier2);
+  const barrier3 = new Barrier(Axis.Y, -256);
+  collider.addBarrier(barrier3);
+  const barrier4 = new Barrier(Axis.Y, 256);
+  collider.addBarrier(barrier4);
 
   setInterval(() => {
     objectA.movementStep(UPDATE_INTERVAL/1000);
@@ -60,3 +70,16 @@ if (import.meta.hot) {
     renderer.updateTriangles();
   }, UPDATE_INTERVAL);
 } */
+
+// game state test
+{
+  const UPDATE_INTERVAL = 10; //ms
+
+  const gameState = new GameState(renderer, collider);
+
+  setInterval(() => {
+    gameState.moveStep(UPDATE_INTERVAL/1000);
+    collider.updateColliders();
+    renderer.updateTriangles();
+  }, UPDATE_INTERVAL);
+}

@@ -109,6 +109,8 @@ export class AABBCollider {
 	}
 
 	simulateBarrierCollision(obj: GameObject, barrier: Barrier) {
+		if (obj.superHeavy) return;
+
 		if (barrier.axis === Axis.X) {
 			const diffMax = barrier.value - obj.boundingBox.xmax;
 			const diffMin = barrier.value - obj.boundingBox.xmin;

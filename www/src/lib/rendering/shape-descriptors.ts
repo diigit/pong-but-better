@@ -46,12 +46,12 @@ export class PolygonDescriptor implements ShapeDescriptor {
 			
 			if (isConvex(v0, v1, v2)) {
 				arr.set([
-					v0.x/CANVAS_WIDTH, 
-					v0.y/CANVAS_HEIGHT, 
-					v1.x/CANVAS_WIDTH, 
-					v1.y/CANVAS_HEIGHT, 
-					v2.x/CANVAS_WIDTH, 
-					v2.y/CANVAS_HEIGHT
+					v0.x/CANVAS_WIDTH*2, 
+					v0.y/CANVAS_HEIGHT*2, 
+					v1.x/CANVAS_WIDTH*2, 
+					v1.y/CANVAS_HEIGHT*2, 
+					v2.x/CANVAS_WIDTH*2, 
+					v2.y/CANVAS_HEIGHT*2
 				], offset + vertexIndex);
 				vertexIndex += 6;
 				clippedVertices.splice(i0, 1);
