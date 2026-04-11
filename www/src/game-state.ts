@@ -19,7 +19,7 @@ export class GameState {
 		renderer.renderGameObject(this.paddleLeft);
 		collider.addCollider(this.paddleLeft);
 
-		collider.objectCollisionOccured.attach((collidingObjects) => {
+		this.objectCollisionEvent = collider.objectCollisionOccured.attach((collidingObjects) => {
 			if (!collidingObjects.includes(this.ball)) return;
 
 			let paddle;
@@ -64,6 +64,19 @@ export class GameState {
 
 		window.addEventListener("keydown", this.keyDownFn);
 		window.addEventListener("keyup", this.keyUpFn);
+
+		this.barrierCollisionEvent = collider.barrierCollisionOccured.attach(([ball, barrier]) => {
+			if (ball !== this.ball) return;
+
+			const isLeftBarrier = barrier === this.barriers[0];
+			const isRightBarrier = barrier === this.barriers[1];
+
+			if (isLeftBarrier) {
+				console.log("[SCORE] Right scored!");
+			} else if (isRightBarrier) {
+				console.log("[SCORE] Left scored!");
+			}
+		})
 	}
 
 	start() {
@@ -88,6 +101,8 @@ export class GameState {
 
 	end() {
 		window.removeEventListener("keydown", this.keyDownFn);
+		this.barrierCollisionEvent.detach();
+		this.objectCollisionEvent.detach();
 	}
 
 	private paddleLeft: GameObject;
@@ -96,4 +111,6 @@ export class GameState {
 	private barriers: Barrier[];
 	private keyDownFn: (event: KeyboardEvent) => void;
 	private keyUpFn;
+	private barrierCollisionEvent;
+	private objectCollisionEvent;
 }
