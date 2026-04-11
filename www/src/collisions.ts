@@ -77,23 +77,30 @@ export class AABBCollider {
 
 	simulateCollision(a: GameObject, b: GameObject) {
 		const { colliding, vector } = calcCollision(a.boundingBox, b.boundingBox);
-		if (colliding === false) return;
+		if (colliding === false || vector.equalTo(Vector.EMPTY)) return;
+
+		const norm = vector.normalize();
+		const flip = new Vector(Math.abs(norm.x) * 2 - 1, Math.abs(norm.y) * 2 - 1);
 
 		this.objectCollisionOccured.post([a, b]);
-
-		console.log("[COLLIDE]", vector);
 		
 		if (a.superHeavy && b.superHeavy) return;
 
 		if (a.superHeavy) {
 			b.shapeDescriptor.move(vector);
-			b.velocity = b.velocity.multiply(-1);
+			b.velocity = new Vector(
+				b.velocity.x * flip.x, 
+				b.velocity.y * flip.y,
+			).multiply(-1);
 			return;
 		}
 
 		if (b.superHeavy) {
 			a.shapeDescriptor.move(vector.multiply(-1));
-			a.velocity = a.velocity.multiply(-1);
+			a.velocity = new Vector(
+				a.velocity.x * flip.x, 
+				a.velocity.y * flip.y,
+			).multiply(-1);
 			return;
 		}
 
@@ -103,9 +110,15 @@ export class AABBCollider {
 
 		const vAF = a.velocity.multiply(x1).add(b.velocity.multiply((2*b.mass)/(a.mass + b.mass)));
 		const vBF = b.velocity.multiply(-x1).add(a.velocity.multiply((2*a.mass)/(a.mass + b.mass)));
-
-		a.velocity = vAF;
-		b.velocity = vBF;
+		
+		a.velocity = new Vector(
+			vAF.x * flip.x, 
+			vAF.y * flip.y,
+		);
+		b.velocity = new Vector(
+			vBF.x * flip.x, 
+			vBF.y * flip.y,
+		);
 	}
 
 	simulateBarrierCollision(obj: GameObject, barrier: Barrier) {
