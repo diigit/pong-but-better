@@ -4,8 +4,12 @@ import { GameObject } from "./game-objects";
 import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT_BALL_SPEED, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_MOVE_SPEED, DEFAULT_PADDLE_WIDTH, PADDLE_EDGE_MARGIN } from "./constants";
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors";
 import type { PongRenderer } from "./pong-renderer";
+import { Evt } from "evt";
 
 export class GameState {
+	public readonly selfScoreChanged = Evt.create<number>();
+	public readonly oppScoreChanged = Evt.create<number>();
+	
 	constructor(renderer: PongRenderer, collider: AABBCollider) {
 		this.ball = new GameObject(new PolygonDescriptor(rect(-DEFAULT_BALL_SIZE/2, -DEFAULT_BALL_SIZE/2, DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE)));
 		this.ball.velocity = vector(DEFAULT_BALL_SPEED, 50);
@@ -72,9 +76,9 @@ export class GameState {
 			const isRightBarrier = barrier === this.barriers[1];
 
 			if (isLeftBarrier) {
-				console.log("[SCORE] Right scored!");
+				this.oppScore += 1;
 			} else if (isRightBarrier) {
-				console.log("[SCORE] Left scored!");
+				this.selfScore += 1;
 			}
 		})
 	}
@@ -105,6 +109,24 @@ export class GameState {
 		this.objectCollisionEvent.detach();
 	}
 
+	get selfScore(): number {
+		return this._selfScore;
+	}
+
+	set selfScore(score: number) {
+		this._selfScore = score;
+		this.selfScoreChanged.post(score);
+	}
+
+	get oppScore(): number {
+		return this._oppScore;
+	}
+
+	set oppScore(score: number) {
+		this._oppScore = score;
+		this.oppScoreChanged.post(score);
+	}
+
 	private paddleLeft: GameObject;
 	private paddleRight: GameObject;
 	private ball: GameObject;
@@ -113,4 +135,7 @@ export class GameState {
 	private keyUpFn;
 	private barrierCollisionEvent;
 	private objectCollisionEvent;
+
+	private _selfScore: number = 0;
+	private _oppScore: number = 0;
 }
