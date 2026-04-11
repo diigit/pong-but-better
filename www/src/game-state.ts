@@ -1,7 +1,7 @@
 import { Point, point, rect, Vector, vector } from "2d-geometry";
 import { AABBCollider, Axis, Barrier } from "./collisions";
 import { GameObject } from "./game-objects";
-import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT_BALL_SPEED, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_MOVE_SPEED, DEFAULT_PADDLE_WIDTH, DEFAULT_WINNING_SCORE, PADDLE_EDGE_MARGIN } from "./constants";
+import { BALL_WAIT_TIME, CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT_BALL_SPEED, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_MOVE_SPEED, DEFAULT_PADDLE_WIDTH, DEFAULT_WINNING_SCORE, PADDLE_EDGE_MARGIN } from "./constants";
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors";
 import type { PongRenderer } from "./pong-renderer";
 import { Evt } from "evt";
@@ -13,8 +13,7 @@ export class GameState {
 	public winningScore = DEFAULT_WINNING_SCORE;
 	
 	constructor(renderer: PongRenderer, collider: AABBCollider) {
-		this.ball = new GameObject(new PolygonDescriptor(rect(-DEFAULT_BALL_SIZE/2, -DEFAULT_BALL_SIZE/2, DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE)));
-		this.ball.velocity = vector(DEFAULT_BALL_SPEED, 50);
+		this.ball = new GameObject(new PolygonDescriptor(rect(0, 0, DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE)));
 		renderer.renderGameObject(this.ball);
 		collider.addCollider(this.ball);
 		
@@ -39,6 +38,9 @@ export class GameState {
 	}
 
 	start() {
+		if (this.isPlaying) return;
+		this.isPlaying = true;
+
 		this.selfScore = 0;
 		this.oppScore = 0;
 
@@ -47,15 +49,31 @@ export class GameState {
 	}
 
 	moveStep(deltaTime: number) {
+		if (!this.isPlaying) return;
+
 		this.paddleLeft.step(deltaTime);
 		this.ball.movementStep(deltaTime);
 		this.paddleRight.step(deltaTime);
 	}
 
 	end() {
+		if (!this.isPlaying) return;
+		this.isPlaying = false;
+
 		window.removeEventListener("keydown", this.keyDownFn);
+		window.removeEventListener("keyup", this.keyUpFn);
+
 		this.barrierCollisionEvent.detach();
 		this.objectCollisionEvent.detach();
+	}
+
+	resetBall() {
+		this.ball.velocity = Vector.EMPTY;
+		this.ball.position = Point.EMPTY;
+
+		setTimeout(() => {
+			this.ball.velocity = vector(DEFAULT_BALL_SPEED * (this._selfScore > this._oppScore ? -1 : 1), 0);
+		}, BALL_WAIT_TIME * 1000)
 	}
 
 	get selfScore(): number {
@@ -65,6 +83,7 @@ export class GameState {
 	set selfScore(score: number) {
 		this._selfScore = score;
 		this.selfScoreChanged.post(score);
+		this.resetBall();
 	}
 
 	get oppScore(): number {
@@ -74,6 +93,7 @@ export class GameState {
 	set oppScore(score: number) {
 		this._oppScore = score;
 		this.oppScoreChanged.post(score);
+		this.resetBall();
 	}
 	
 	private onObjectCollision = (collidingObjects: GameObject[]) => {
@@ -126,6 +146,7 @@ export class GameState {
 	private barriers: Barrier[];
 	private barrierCollisionEvent;
 	private objectCollisionEvent;
+	private isPlaying = false;
 
 	private _selfScore: number = 0;
 	private _oppScore: number = 0;

@@ -76,6 +76,8 @@ if (import.meta.hot) {
 {
   const UPDATE_INTERVAL = 10; //ms
 
+  gameState.start();
+
   setInterval(() => {
     gameState.moveStep(UPDATE_INTERVAL/1000);
     collider.updateColliders();

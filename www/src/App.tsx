@@ -1,5 +1,5 @@
 import MovingBackground from "./components/ui/MovingBackground";
-import GameCanvas from "./components/ui/GameCanvas";
+import GameWindow from "./components/ui/GameWindow";
 
 export function App() {
   return (
@@ -9,7 +9,7 @@ export function App() {
         <p className="font-light italic">version 0.0.0</p>
       </div>
       <MovingBackground/>
-      <GameCanvas/>
+      <GameWindow/>
     </div>
   );
 }
