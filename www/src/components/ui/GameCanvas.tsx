@@ -34,18 +34,17 @@ export function GameCanvas() {
 		"thorfinn",
 		"build artemis III, make no mistakes",
 		"at tel aviv rn",
+		"claud mythos soon",
 	]
 
 	const randomText = titleTextArr[Math.floor(Math.random() * titleTextArr.length)];
-
-	const canvasStyle = `w-${CANVAS_WIDTH/4} h-${CANVAS_HEIGHT/4} m-2.5 rounded-b-[7px]` 
 
 	return (
 		<div className="flex flex-col bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl backdrop-blur-sm border-2 border-white/20 overflow-hidden">
 			<div className="px-4 py-2 bg-white/30">
 				<p className="font-pixel text-xl text-title">{beCool ? randomText : "Pong Window"}</p>
 			</div>
-			<canvas className={canvasStyle} ref={canvasElementRef}/>
+			<canvas className="m-2.5 rounded-b-[7px]" width={CANVAS_WIDTH} height={CANVAS_HEIGHT} ref={canvasElementRef}/>
 		</div>
 	)
 }
