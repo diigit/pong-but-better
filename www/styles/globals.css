@@ -12,6 +12,7 @@
   --color-normal-text: var(--normal-text);
 
   --font-title: "JetBrains Mono";
+  --font-sans: "Poppins";
   --font-pixel: "Tiny5";
 
   --radius-sm: calc(var(--radius) - 4px);

@@ -43,19 +43,19 @@ export function GameWindow() {
  				<p key="right score" className="font-sans font-medium text-lg text-normal-text/80 justify-end text-right items-center bg-black/4 text-shadow-sm px-2 py-1 rounded-xl">Opponent Score: {oppScore}</p>
 			</div>
 			<div className="m-2.5 relative z-1">
-				<canvas className={`rounded-b-[7px] ${!gameIsActive ? "blur-xs" : ""}`} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} ref={canvasElementRef}/>
+				<canvas className={`${!gameIsActive ? "blur-xs" : ""}`} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} ref={canvasElementRef}/>
 				{!gameIsActive ? 
 					<div className="absolute flex flex-col justify-center items-center top-0 left-0 w-full h-full gap-3">
-						<p className="font-sans font-medium text-xl text-normal-text/80 text-shadow-sm">{
+						<p className="font-sans font-light text-xl text-normal-text/80 text-shadow-sm">{
 							selfScore > oppScore ? "You won! Play again?" : 
 							oppScore > selfScore ? `Hah, loser! Play again?` : 
 							"Ready to play?"
 						}</p>
 						<button 
 							type="button" 
-							className="font-sans font-medium text-lg text-normal-text/80 px-4 py-1 bg-white/30 border-2 border-white/20 rounded-xl hover:bg-gray-100/30 hover:scale-110 active:scale-90 cursor-pointer transition-all text-shadow-sm" 
+							className="font-sans font-bold text-lg text-normal-text/80 px-4 py-1 bg-white/30 border-2 border-white/20 rounded-xl hover:bg-gray-100/30 hover:scale-110 active:scale-90 cursor-pointer transition-all text-shadow-sm" 
 							onClick={() => dependencies.gameState.start()}
-						>Play</button>
+						>PLAY</button>
 					</div>
 				: undefined}
 			</div>
