@@ -23,43 +23,6 @@ export class Barrier {
 	) { }
 }
 
-function calcCollision(a: Box, b: Box): { 
-	colliding: boolean, 
-	vector: Vector 
-} {
-	const differences = [
-		a.xmax - b.xmin, 
-		a.ymax - b.ymin, 
-		a.xmin - b.xmax, 
-		a.ymin - b.ymax
-	] as const;
-
-	const isColliding = 
-		Math.sign(differences[2]) !== Math.sign(differences[0]) && 
-		Math.sign(differences[1]) !== Math.sign(differences[3]);
-
-	if (isColliding === false) 
-		return { 
-			colliding: false, 
-			vector: Vector.EMPTY 
-		};
-
-	let rotation = 0;
-	let min = Infinity;
-
-	differences.forEach((diff, index) => {
-		if (Math.abs(diff) < min) {
-			min = diff;
-			rotation = index;
-		}
-	})
-
-	return {
-		colliding: isColliding,
-		vector: rotation % 2 === 0 ? vector(min, 0) : vector(0, min),
-	};
-}
-
 export class AABBCollider {
 	public readonly objectCollisionOccured = Evt.create<[a: GameObject, b: GameObject]>();
 	public readonly barrierCollisionOccured = Evt.create<[object: GameObject, barrier: Barrier]>();
@@ -83,7 +46,7 @@ export class AABBCollider {
 	}
 
 	simulateCollision(a: GameObject, b: GameObject) {
-		const { colliding, vector } = calcCollision(a.boundingBox, b.boundingBox);
+		const { colliding, vector } = this.boundingBoxesAreColliding(a.boundingBox, b.boundingBox);
 		if (colliding === false || vector.equalTo(Vector.EMPTY)) return;
 
 		const norm = vector.normalize();
@@ -180,6 +143,43 @@ export class AABBCollider {
 
 	removeCollider(obj: GameObject) {
 		this.colliders.delete(obj);
+	}
+	
+	boundingBoxesAreColliding(a: Box, b: Box): { 
+		colliding: boolean, 
+		vector: Vector 
+	} {
+		const differences = [
+			a.xmax - b.xmin, 
+			a.ymax - b.ymin, 
+			a.xmin - b.xmax, 
+			a.ymin - b.ymax
+		] as const;
+
+		const isColliding = 
+			Math.sign(differences[2]) !== Math.sign(differences[0]) && 
+			Math.sign(differences[1]) !== Math.sign(differences[3]);
+
+		if (isColliding === false) 
+			return { 
+				colliding: false, 
+				vector: Vector.EMPTY 
+			};
+
+		let rotation = 0;
+		let min = Infinity;
+
+		differences.forEach((diff, index) => {
+			if (Math.abs(diff) < min) {
+				min = diff;
+				rotation = index;
+			}
+		})
+
+		return {
+			colliding: isColliding,
+			vector: rotation % 2 === 0 ? vector(min, 0) : vector(0, min),
+		};
 	}
 
 	private colliders = new Set<GameObject>;

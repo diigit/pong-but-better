@@ -272,7 +272,7 @@ class ManyBallsGamemode implements GamemodeHandler {
 	}
 	
 	onStart(): void {
-		for (let i = 0; i < 20; i++) {
+		for (let i = 0; i < 10; i++) {
 			const sideSize = randomBetween(12, 14);
 
 			const spawnPositionWidth = CANVAS_WIDTH - sideSize;
@@ -326,9 +326,57 @@ class ObstaclesGamemode implements GamemodeHandler {
 
 	}
 
+	onStart(): void {
+		let index = 0;
+		while (this.obstacles.length < 10) {
+			const sideSize = randomBetween(10, 32);
+
+			const spawnPositionWidth = CANVAS_WIDTH - sideSize - (PADDLE_EDGE_MARGIN + DEFAULT_PADDLE_WIDTH + 10);
+			const spawnPositionHeight = CANVAS_HEIGHT - sideSize;
+			
+			const newObstacle = new GameObject(new PolygonDescriptor(rect(
+				randomBetween(-spawnPositionWidth/2, spawnPositionWidth/2),
+				randomBetween(-spawnPositionHeight/2, spawnPositionHeight/2),
+				sideSize,
+				sideSize * randomBetween(.5, 1.5),
+			)))
+
+			let colliding = false;
+			this.obstacles.forEach((other) => {
+				const result = this.gameState.collider.boundingBoxesAreColliding(newObstacle.boundingBox, other.boundingBox);
+				colliding = result.colliding || colliding;
+			});
+
+			if (colliding) 
+				continue;
+			
+
+			newObstacle.superHeavy = true;
+
+			this.gameState.collider.addCollider(newObstacle);
+			this.gameState.renderer.renderGameObject(newObstacle);
+
+			this.obstacles[index] = newObstacle;
+
+			index++;
+		}
+	}
+
+	onEnd(): void {
+		this.obstacles.forEach((obstacle) => {
+			this.gameState.collider.removeCollider(obstacle);
+			this.gameState.renderer.unrenderGameObject(obstacle);
+		});
+
+		this.obstacles = new Array;
+	}
+
+
 	cleanUp() {
 		
 	}
+
+	private obstacles = new Array<GameObject>;
 }
 
 enum PaddleMoveDirection {

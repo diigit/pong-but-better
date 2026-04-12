@@ -48,7 +48,7 @@ export function GameWindow() {
 					<div className="absolute flex flex-col justify-center items-center top-0 left-0 w-full h-full gap-3">
 						<p className="font-sans font-light text-xl text-normal-text/80 text-shadow-sm">{
 							selfScore > oppScore ? "You won! Play again?" : 
-							oppScore > selfScore ? `Hah, loser! Play again?` : 
+							oppScore > selfScore ? `You lost! Play again?` : 
 							"Ready to play?"
 						}</p>
 						<button 
