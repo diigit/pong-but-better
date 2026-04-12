@@ -1,11 +1,10 @@
 import { Point, point, rect, Vector, vector } from "2d-geometry";
 import { AABBCollider, Axis, Barrier } from "./collisions";
 import { GameObject } from "./game-objects";
-import { BALL_WAIT_TIME, CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT_BALL_SPEED, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_MOVE_SPEED, DEFAULT_PADDLE_WIDTH, DEFAULT_WINNING_SCORE, PADDLE_EDGE_MARGIN } from "./constants";
+import { BALL_WAIT_TIME, CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT_BALL_SPEED, DEFAULT_BOT_FUTURE_READ, DEFAULT_BOT_POLLING_TIME, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_MOVE_SPEED, DEFAULT_PADDLE_WIDTH, DEFAULT_WINNING_SCORE, PADDLE_EDGE_MARGIN } from "./constants";
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors";
 import type { PongRenderer } from "./pong-renderer";
 import { Evt } from "evt";
-import { act } from "react";
 
 export class GameState {
 	public readonly selfScoreChanged = Evt.create<number>();
@@ -14,7 +13,7 @@ export class GameState {
 
 	public winningScore = DEFAULT_WINNING_SCORE;
 	
-	constructor(renderer: PongRenderer, collider: AABBCollider) {
+	constructor(private renderer: PongRenderer, private collider: AABBCollider) {
 		this.ball = new GameObject(new PolygonDescriptor(rect(0, 0, DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE)));
 		renderer.renderGameObject(this.ball);
 		collider.addCollider(this.ball);
@@ -27,8 +26,6 @@ export class GameState {
 		renderer.renderGameObject(this.paddleRight.paddle);
 		collider.addCollider(this.paddleRight.paddle);
 
-		this.objectCollisionEvent = collider.objectCollisionOccured.attach(this.onObjectCollision);
-
 		this.barriers = [];
 		this.barriers[0] = new Barrier(Axis.X, -CANVAS_WIDTH/2); 	// left
 		this.barriers[1] = new Barrier(Axis.X, CANVAS_WIDTH/2); 	// right
@@ -36,7 +33,7 @@ export class GameState {
 		this.barriers[3] = new Barrier(Axis.Y, CANVAS_HEIGHT/2); 	// bottom
 		this.barriers.forEach((barrier) => collider.addBarrier(barrier));
 
-		this.barrierCollisionEvent = collider.barrierCollisionOccured.attach(this.onBarrierCollision);
+		this.botOpp = new BotPaddleController(this.paddleRight, this.ball);
 	}
 
 	start() {
@@ -45,6 +42,11 @@ export class GameState {
 
 		this.selfScore = 0;
 		this.oppScore = 0;
+
+		this.botOpp.start();
+
+		this.barrierCollisionEvent = this.collider.barrierCollisionOccured.attach(this.onBarrierCollision);
+		this.objectCollisionEvent = this.collider.objectCollisionOccured.attach(this.onObjectCollision);
 
 		window.addEventListener("keydown", this.keyDownFn);
 		window.addEventListener("keyup", this.keyUpFn);
@@ -65,13 +67,18 @@ export class GameState {
 		window.removeEventListener("keydown", this.keyDownFn);
 		window.removeEventListener("keyup", this.keyUpFn);
 
-		this.barrierCollisionEvent.detach();
-		this.objectCollisionEvent.detach();
+		this.botOpp.stop();
+
+		this.barrierCollisionEvent?.detach();
+		this.objectCollisionEvent?.detach();
 	}
 
 	resetBall() {
 		this.ball.velocity = Vector.EMPTY;
 		this.ball.position = Point.EMPTY;
+
+		this.paddleLeft.paddle.position = point(this.paddleLeft.paddle.position.x, 0); 
+		this.paddleRight.paddle.position = point(this.paddleRight.paddle.position.x, 0);
 
 		if (this.selfScore >= this.winningScore || this.oppScore >= this.winningScore) {
 			this.end();
@@ -161,10 +168,11 @@ export class GameState {
 	private paddleRight;
 	private ball: GameObject;
 	private barriers: Barrier[];
-	private barrierCollisionEvent;
-	private objectCollisionEvent;
-	private _isGameActive = false;
+	private barrierCollisionEvent: Evt<[object: GameObject, barrier: Barrier]> | undefined;
+	private objectCollisionEvent: Evt<[a: GameObject, b: GameObject]> | undefined;
+	private botOpp;
 
+	private _isGameActive = false;
 	private _selfScore: number = 0;
 	private _oppScore: number = 0;
 }
@@ -238,4 +246,44 @@ export class PaddleController {
 
 	private _speed = DEFAULT_PADDLE_MOVE_SPEED;
 	private _moveDirection = PaddleMoveDirection.None;
+}
+
+export class BotPaddleController {
+	public readonly pollingTime = DEFAULT_BOT_POLLING_TIME; // seconds
+	public readonly futureRead = DEFAULT_BOT_FUTURE_READ;
+	
+	constructor(public readonly paddle: PaddleController, private ball: GameObject) { }
+
+	start() {
+		if (this.isActive) return;
+		this.isActive = true;	
+
+		this.interval = setInterval(() => {
+			const paddle = this.paddle.paddle;
+			const ball = this.ball;
+
+			const xDist = Math.min(paddle.position.x - ball.position.x, 100);
+			const futureYPos = (ball.velocity.y / ball.velocity.x ) * xDist + ball.position.y;
+			
+			let moveDirection = PaddleMoveDirection.None;
+
+			if (paddle.boundingBox.ymin > futureYPos) {
+				moveDirection = PaddleMoveDirection.Down;
+			} else if (paddle.boundingBox.ymax < futureYPos) {
+				moveDirection = PaddleMoveDirection.Up;
+			}
+			
+			this.paddle.move(moveDirection);
+		}, this.pollingTime * 1000)
+	}
+
+	stop() {
+		if (!this.isActive) return;
+		this.isActive = false;
+
+		clearInterval(this.interval);
+	}
+
+	private isActive = false;
+	private interval: NodeJS.Timeout | undefined;
 }
