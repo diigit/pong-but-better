@@ -1,4 +1,4 @@
-export const CANVAS_WIDTH = 512;
+export const CANVAS_WIDTH = 1024;
 export const CANVAS_HEIGHT = 384;
 
 export const DEFAULT_PADDLE_WIDTH = 16;

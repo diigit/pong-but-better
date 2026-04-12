@@ -38,47 +38,12 @@ if (import.meta.hot) {
   createRoot(elem).render(app);
 }
 
-// object collision test
-/*{
-  const UPDATE_INTERVAL = 10; //ms
-  
-  const objectA = new GameObject(new PolygonDescriptor(rect(-256, -32, 64, 64)));
-  objectA.mass = 3;
-  objectA.velocity = vector(0, 0);
-  renderer.renderGameObject(objectA);
-  collider.addCollider(objectA);
-
-  const objectB = new GameObject(new PolygonDescriptor(rect(256, -32, 64, 64)));
-  objectB.mass = 1;
-  objectB.velocity = vector(-1000, -30);
-  objectB.acceleration = vector(0, -5000);
-  renderer.renderGameObject(objectB);
-  collider.addCollider(objectB);
-
-  const barrier1 = new Barrier(Axis.X, -512);
-  collider.addBarrier(barrier1);
-  const barrier2 = new Barrier(Axis.X, 512);
-  collider.addBarrier(barrier2);
-  const barrier3 = new Barrier(Axis.Y, -256);
-  collider.addBarrier(barrier3);
-  const barrier4 = new Barrier(Axis.Y, 256);
-  collider.addBarrier(barrier4);
-
-  setInterval(() => {
-    objectA.movementStep(UPDATE_INTERVAL/1000);
-    objectB.movementStep(UPDATE_INTERVAL/1000);
-    collider.updateColliders();
-    renderer.updateTriangles();
-  }, UPDATE_INTERVAL);
-} */
-
 // game state test
 {
-  const UPDATE_INTERVAL = 10; //ms
+  const PHYSICS_UPDATE_HZ = 165; // times per second
 
   setInterval(() => {
-    gameState.moveStep(UPDATE_INTERVAL/1000);
+    gameState.moveStep(1/PHYSICS_UPDATE_HZ);
     collider.updateColliders();
-    renderer.updateTriangles();
-  }, UPDATE_INTERVAL);
+  }, 1000/PHYSICS_UPDATE_HZ);
 }

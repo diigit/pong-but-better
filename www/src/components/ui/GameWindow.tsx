@@ -36,7 +36,7 @@ export function GameWindow() {
 	}, [dependencies.gameState])
 
 	return (
-		<div className="flex-none flex flex-col bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl backdrop-blur-sm border-2 border-white/20 overflow-hidden">
+		<div className="flex-none flex flex-col bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl border-2 border-white/20 overflow-hidden">
 			<div key="top bar" className="flex flex-row px-2 py-2 bg-white/30">
 				<p key="left score" className="font-sans font-medium text-lg text-normal-text/80 justify-start text-left items-center bg-black/4 text-shadow-sm px-2 py-1 rounded-xl">Your Score: {selfScore}</p>
 				<div key="spacer" className="grow"/> 

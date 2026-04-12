@@ -1,5 +1,6 @@
 import { SHA512_256 } from "bun";
 import { GameObject } from "./game-objects";
+import { Evt } from "evt";
 
 const VERTEX_BUFFER_STARTING_LENGTH = 64; // 32 vertices
 
@@ -75,13 +76,6 @@ class GpuHandler {
 		});
 
 		this.vertexBuffer = this.createVertexBuffer(32 * VERTEX_BUFFER_STARTING_LENGTH);
-
-		const step = () => {
-			this.render()
-			this.renderLoopId = window.requestAnimationFrame(step);
-		}
-
-		this.renderLoopId = window.requestAnimationFrame(step);
 	}
 
 	createVertexBuffer(size: number): GPUBuffer {
@@ -132,7 +126,6 @@ class GpuHandler {
 
 	cleanup() {
 		this.vertexBuffer.destroy();
-		window.cancelAnimationFrame(this.renderLoopId);
 	}
 
 	private vertexBuffer: GPUBuffer;
@@ -140,10 +133,11 @@ class GpuHandler {
 	private renderPipeline: GPURenderPipeline;
 	private context: GPUCanvasContext;
 	private numVertices: number = 0;
-	private renderLoopId: number;
 }
 
 export class PongRenderer {
+	public readonly frameRendered = Evt.create<number>();
+
 	constructor() {
 		this.gpu = window.navigator.gpu;
 		if (this.gpu === undefined) Error("WebGPU is not supported by this browser.");
@@ -154,6 +148,7 @@ export class PongRenderer {
 			// TODO cleanup
 			this.canvas = undefined;
 			this.gpuHandler?.cleanup();
+			window.cancelAnimationFrame(this.renderLoopId);
 			return;
 		}
 
@@ -161,6 +156,18 @@ export class PongRenderer {
 
 		this.canvas = canvas;
 		this.gpuHandler = new GpuHandler(canvas);
+
+		const step: FrameRequestCallback = (deltaTime) => {
+			if (this.gpuHandler === undefined) return;
+
+			this.updateTriangles();
+			this.gpuHandler.render()
+			this.renderLoopId = window.requestAnimationFrame(step);
+
+			this.frameRendered.post(deltaTime);
+		}
+
+		this.renderLoopId = window.requestAnimationFrame(step);
 	}
 	
 	updateTriangles() {
@@ -194,6 +201,7 @@ export class PongRenderer {
 	private objects = new Set<GameObject>;
 	private canvas: HTMLCanvasElement | undefined;
 	private gpu: GPU;
+	private renderLoopId = 0;
 
 	private gpuHandler: GpuHandler | undefined;
 }
