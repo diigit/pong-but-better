@@ -105,10 +105,16 @@ export class AABBCollider {
 			) return;
 			this.barrierCollisionOccured.post([obj, barrier]);
 
-			if (Math.abs(diffMax) < Math.abs(diffMin)) {
-				obj.shapeDescriptor.move(vector(diffMax, 0));
-			} else {
+			if (barrier.equality === Equality.EqualTo) {
+				if (Math.abs(diffMax) < Math.abs(diffMin)) {
+					obj.shapeDescriptor.move(vector(diffMax, 0));
+				} else {
+					obj.shapeDescriptor.move(vector(diffMin, 0));
+				}
+			} else if (barrier.equality === Equality.LessThan) {
 				obj.shapeDescriptor.move(vector(diffMin, 0));
+			} else if (barrier.equality === Equality.GreaterThan) {
+				obj.shapeDescriptor.move(vector(diffMax, 0));
 			}
 
 			obj.velocity = vector(-obj.velocity.x, obj.velocity.y);
@@ -116,13 +122,23 @@ export class AABBCollider {
 			const diffMax = barrier.value - obj.boundingBox.ymax;
 			const diffMin = barrier.value - obj.boundingBox.ymin;
 			
-			if (Math.sign(diffMax) === Math.sign(diffMin)) return;
+			if (
+				(barrier.equality === Equality.EqualTo && Math.sign(diffMax) === Math.sign(diffMin)) ||
+				(barrier.equality === Equality.LessThan && Math.sign(diffMax) === Math.sign(diffMin) && Math.sign(diffMax) === -1) ||
+				(barrier.equality === Equality.GreaterThan && Math.sign(diffMax) === Math.sign(diffMin) && Math.sign(diffMax) === 1)
+			) return;
 			this.barrierCollisionOccured.post([obj, barrier]);
 
-			if (Math.abs(diffMax) < Math.abs(diffMin)) {
-				obj.shapeDescriptor.move(vector(0, diffMax));
-			} else {
+			if (barrier.equality === Equality.EqualTo) {
+				if (Math.abs(diffMax) < Math.abs(diffMin)) {
+					obj.shapeDescriptor.move(vector(0, diffMax));
+				} else {
+					obj.shapeDescriptor.move(vector(0, diffMin));
+				}
+			} else if (barrier.equality === Equality.LessThan) {
 				obj.shapeDescriptor.move(vector(0, diffMin));
+			} else if (barrier.equality === Equality.GreaterThan) {
+				obj.shapeDescriptor.move(vector(0, diffMax));
 			}
 
 			obj.velocity = vector(obj.velocity.x, -obj.velocity.y);
