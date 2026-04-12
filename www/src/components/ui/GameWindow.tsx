@@ -1,5 +1,6 @@
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from "@/constants";
 import { dependencyContext } from "@/frontend";
+import { Evt } from "evt";
 import React from "react";
 
 export function GameWindow() {
@@ -20,18 +21,17 @@ export function GameWindow() {
 	}, [canvasElementRef.current, dependencies.renderer])
 
 	React.useEffect(() => {
-		const selfScoreChangedEvt = dependencies.gameState.selfScoreChanged.attach(setSelfScore);
-		const oppScoreChangedEvt = dependencies.gameState.oppScoreChanged.attach(setOppScore);
-		const gameActivityChangedEvt = dependencies.gameState.gameActivityChanged.attach(setGameActive);
+		const ctx = Evt.newCtx();
+		dependencies.gameState.selfScoreChanged.attach(ctx, setSelfScore);
+		dependencies.gameState.oppScoreChanged.attach(ctx, setOppScore);
+		dependencies.gameState.gameActivityChanged.attach(ctx, setGameActive);
 
 		if (selfScore === -1) setSelfScore(dependencies.gameState.selfScore);
 		if (oppScore === -1) setOppScore(dependencies.gameState.oppScore);
 		if (gameIsActive !== dependencies.gameState.isGameActive) setGameActive(dependencies.gameState.isGameActive);
 
 		return () => {
-			selfScoreChangedEvt.detach();
-			oppScoreChangedEvt.detach();
-			gameActivityChangedEvt.detach();
+			ctx.done();
 		}
 	}, [dependencies.gameState])
 

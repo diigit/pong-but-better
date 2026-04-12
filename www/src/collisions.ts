@@ -9,10 +9,17 @@ export enum Axis {
 	Y,
 }
 
+export enum Equality {
+	LessThan,
+	EqualTo,
+	GreaterThan,
+}
+
 export class Barrier {
 	constructor(
 		public readonly axis: Axis,
 		public readonly value: number,
+		public readonly equality: Equality,
 	) { }
 }
 
@@ -128,7 +135,11 @@ export class AABBCollider {
 			const diffMax = barrier.value - obj.boundingBox.xmax;
 			const diffMin = barrier.value - obj.boundingBox.xmin;
 
-			if (Math.sign(diffMax) === Math.sign(diffMin)) return;
+			if (
+				(barrier.equality === Equality.EqualTo && Math.sign(diffMax) === Math.sign(diffMin)) ||
+				(barrier.equality === Equality.LessThan && Math.sign(diffMax) === Math.sign(diffMin) && Math.sign(diffMax) === -1) ||
+				(barrier.equality === Equality.GreaterThan && Math.sign(diffMax) === Math.sign(diffMin) && Math.sign(diffMax) === 1)
+			) return;
 			this.barrierCollisionOccured.post([obj, barrier]);
 
 			if (Math.abs(diffMax) < Math.abs(diffMin)) {

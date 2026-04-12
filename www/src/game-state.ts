@@ -1,21 +1,36 @@
 import { Point, point, rect, Vector, vector } from "2d-geometry";
-import { AABBCollider, Axis, Barrier } from "./collisions";
+import { AABBCollider, Axis, Barrier, Equality } from "./collisions";
 import { GameObject } from "./game-objects";
-import { BALL_WAIT_TIME, CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT_BALL_SPEED, DEFAULT_BOT_FUTURE_READ, DEFAULT_BOT_POLLING_TIME, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_MOVE_SPEED, DEFAULT_PADDLE_WIDTH, DEFAULT_WINNING_SCORE, PADDLE_EDGE_MARGIN } from "./constants";
+import { BALL_MASS, BALL_WAIT_TIME, BOT_DIFFICULTY, CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT_BALL_SPEED, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_MOVE_SPEED, DEFAULT_PADDLE_WIDTH, DEFAULT_WINNING_SCORE, PADDLE_EDGE_MARGIN } from "./constants";
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors";
 import type { PongRenderer } from "./pong-renderer";
 import { Evt } from "evt";
 import { act } from "react";
 
+export enum Gamemode {
+	Normal, 
+	Ball50,
+	Obstacles,
+}
+
+export enum BotDifficulty {
+	Easy,
+	Medium,
+	Hard,
+}
+
 export class GameState {
 	public readonly selfScoreChanged = Evt.create<number>();
 	public readonly oppScoreChanged = Evt.create<number>();
 	public readonly gameActivityChanged = Evt.create<boolean>();
+	public readonly gamemodeChanged = Evt.create<Gamemode>();
+	public readonly botDifficultyChanged = Evt.create<BotDifficulty>();
 
 	public winningScore = DEFAULT_WINNING_SCORE;
 	
-	constructor(private renderer: PongRenderer, private collider: AABBCollider) {
+	constructor(readonly renderer: PongRenderer, readonly collider: AABBCollider) {
 		this.ball = new GameObject(new PolygonDescriptor(rect(0, 0, DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE)));
+		this.ball.mass = BALL_MASS;
 		renderer.renderGameObject(this.ball);
 		collider.addCollider(this.ball);
 
@@ -28,10 +43,10 @@ export class GameState {
 		collider.addCollider(this.paddleRight.paddle);
 
 		this.barriers = [];
-		this.barriers[0] = new Barrier(Axis.X, -CANVAS_WIDTH/2); 	// left
-		this.barriers[1] = new Barrier(Axis.X, CANVAS_WIDTH/2); 	// right
-		this.barriers[2] = new Barrier(Axis.Y, -CANVAS_HEIGHT/2); 	// top
-		this.barriers[3] = new Barrier(Axis.Y, CANVAS_HEIGHT/2); 	// bottom
+		this.barriers[0] = new Barrier(Axis.X, -CANVAS_WIDTH/2, Equality.LessThan); 	// left
+		this.barriers[1] = new Barrier(Axis.X, CANVAS_WIDTH/2, Equality.GreaterThan); 	// right
+		this.barriers[2] = new Barrier(Axis.Y, -CANVAS_HEIGHT/2, Equality.LessThan); 	// top
+		this.barriers[3] = new Barrier(Axis.Y, CANVAS_HEIGHT/2, Equality.GreaterThan); 	// bottom
 		this.barriers.forEach((barrier) => collider.addBarrier(barrier));
 
 		this.botOpp = new BotPaddleController(this.paddleRight, this.ball);
@@ -57,6 +72,8 @@ export class GameState {
 		this.isGameActive = true;
 
 		this.resetBall();
+
+		this._gamemode?.onStart?.();
 	}
 
 	moveStep(deltaTime: number) {
@@ -65,6 +82,8 @@ export class GameState {
 		this.paddleLeft.step(deltaTime);
 		this.ball.movementStep(deltaTime);
 		this.paddleRight.step(deltaTime);
+
+		this._gamemode?.onStep?.(deltaTime);
 	}
 
 	end() {
@@ -79,6 +98,8 @@ export class GameState {
 		this.botOpp.stop();
 
 		this.ctx.done();
+
+		this._gamemode?.onEnd?.();
 	}
 
 	resetBall(ign = false) {
@@ -89,6 +110,8 @@ export class GameState {
 
 		this.paddleLeft.reset();
 		this.paddleRight.reset();
+
+		this._gamemode?.onReset?.();
 
 		if (this.selfScore >= this.winningScore || this.oppScore >= this.winningScore) {
 			this.end();
@@ -130,6 +153,44 @@ export class GameState {
 		this.resetBall();
 	}
 	
+	get gamemode() {
+		return this._gamemode !== undefined ? this._gamemode.type : Gamemode.Normal;
+	}
+
+	set gamemode(newGamemode: Gamemode) {
+		if ((newGamemode === Gamemode.Normal && this._gamemode === undefined) || newGamemode === this._gamemode?.type) return;
+
+		this.selfScore = 0;
+		this.oppScore = 0;
+		
+		this.end();
+		this._gamemode?.cleanUp();
+
+		let gamemodeHandler;
+		switch (newGamemode) {
+			case Gamemode.Ball50:
+				gamemodeHandler = new Ball50Gamemode(this);
+				break;
+			case Gamemode.Obstacles:
+				gamemodeHandler = new ObstaclesGamemode(this);
+				break;
+		}
+
+		this._gamemode = gamemodeHandler;
+		this.gamemodeChanged.post(newGamemode);
+	}
+
+	get botDifficulty() {
+		return this._botDifficulty;
+	}
+
+	set botDifficulty(newBotDifficulty: BotDifficulty) {
+		this._botDifficulty = newBotDifficulty;
+		this.botDifficultyChanged.post(newBotDifficulty);
+
+		this.botOpp.setDifficulty(newBotDifficulty);
+	}
+
 	private onObjectCollision = (collidingObjects: GameObject[]) => {
 		if (!collidingObjects.includes(this.ball)) return;
 
@@ -176,7 +237,7 @@ export class GameState {
 
 	private paddleLeft;
 	private paddleRight;
-	private ball: GameObject;
+	ball: GameObject;
 	private barriers: Barrier[];
 	private botOpp;
 	private ctx;
@@ -184,6 +245,91 @@ export class GameState {
 	private _isGameActive = false;
 	private _selfScore: number = 0;
 	private _oppScore: number = 0;
+	private _gamemode: GamemodeHandler | undefined;
+	private _botDifficulty = BotDifficulty.Easy;
+}
+
+interface GamemodeHandler {
+	onStart?(): void;
+	onStep?(deltaTime: number): void;
+	onEnd?(): void;
+	onReset?(): void;
+
+	cleanUp(): void;
+
+	readonly gameState: GameState;
+	readonly type: Gamemode;
+}
+
+function randomBetween(min: number, max: number) {
+	return Math.random() * (max - min) + min;
+}
+
+class Ball50Gamemode implements GamemodeHandler {
+	public readonly type = Gamemode.Ball50;
+
+	constructor(readonly gameState: GameState) {
+		
+	}
+	
+	onStart(): void {
+		for (let i = 0; i < 20; i++) {
+			const sideSize = randomBetween(12, 14);
+
+			const spawnPositionWidth = CANVAS_WIDTH - sideSize;
+			const spawnPositionHeight = CANVAS_HEIGHT - sideSize;
+			
+			const newBall = new GameObject(new PolygonDescriptor(rect(
+				randomBetween(-spawnPositionWidth/2, spawnPositionWidth/2),
+				randomBetween(-spawnPositionHeight/2, spawnPositionHeight/2),
+				sideSize,
+				sideSize,
+			)))
+
+			newBall.velocity = vector(randomBetween(-100, 100), randomBetween(-100, 100))
+			newBall.mass = randomBetween(.7, 2)
+
+			this.gameState.collider.addCollider(newBall);
+			this.gameState.renderer.renderGameObject(newBall);
+
+			this.balls[i] = newBall;
+		}
+	}
+
+	onStep(deltaTime: number): void {
+		this.balls.forEach((ball) => {
+			ball.movementStep(deltaTime);
+		});
+
+		if (this.gameState.ball.velocity.length < 400) {
+			this.gameState.ball.velocity = this.gameState.ball.velocity.multiply(2);
+		}
+	}
+
+	onEnd(): void {
+		this.balls.forEach((ball) => {
+			this.gameState.collider.removeCollider(ball);
+			this.gameState.renderer.unrenderGameObject(ball);
+		});
+	}
+
+	cleanUp() {
+		                                                                                                                                                                                            
+	}
+
+	private balls = new Array<GameObject>;
+}
+
+class ObstaclesGamemode implements GamemodeHandler {
+	public readonly type = Gamemode.Ball50;
+
+	constructor(readonly gameState: GameState) {
+
+	}
+
+	cleanUp() {
+		
+	}
 }
 
 enum PaddleMoveDirection {
@@ -263,8 +409,8 @@ export class PaddleController {
 }
 
 export class BotPaddleController {
-	public readonly pollingTime = DEFAULT_BOT_POLLING_TIME; // seconds
-	public readonly futureRead = DEFAULT_BOT_FUTURE_READ;
+	public pollingRate = BOT_DIFFICULTY.EASY.POLLING_RATE; // seconds
+	public predictionDistanace = BOT_DIFFICULTY.EASY.PREDICT_DISTANCE;
 	
 	constructor(public readonly paddle: PaddleController, private ball: GameObject) { }
 
@@ -288,7 +434,30 @@ export class BotPaddleController {
 			}
 			
 			this.paddle.move(moveDirection);
-		}, this.pollingTime * 1000)
+		}, 1000/this.pollingRate)
+	}
+
+	setDifficulty(difficulty: BotDifficulty) {
+		switch (difficulty) {
+			case BotDifficulty.Easy:
+				this.pollingRate = BOT_DIFFICULTY.EASY.POLLING_RATE;
+				this.predictionDistanace = BOT_DIFFICULTY.EASY.PREDICT_DISTANCE;
+				this.paddle.speed = BOT_DIFFICULTY.EASY.PADDLE_MOVE_SPEED;
+				break;
+			case BotDifficulty.Medium:
+				this.pollingRate = BOT_DIFFICULTY.MEDIUM.POLLING_RATE;
+				this.predictionDistanace = BOT_DIFFICULTY.MEDIUM.PREDICT_DISTANCE;
+				this.paddle.speed = BOT_DIFFICULTY.MEDIUM.PADDLE_MOVE_SPEED;
+				break;
+			case BotDifficulty.Hard:
+				this.pollingRate = BOT_DIFFICULTY.HARD.POLLING_RATE;
+				this.predictionDistanace = BOT_DIFFICULTY.HARD.PREDICT_DISTANCE;
+				this.paddle.speed = BOT_DIFFICULTY.HARD.PADDLE_MOVE_SPEED;
+				break;
+		}
+		
+		this.stop();
+		this.start();
 	}
 
 	stop() {

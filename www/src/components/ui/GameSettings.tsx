@@ -1,4 +1,6 @@
 import { dependencyContext } from "@/frontend";
+import { BotDifficulty, Gamemode } from "@/game-state";
+import { Evt } from "evt";
 import React from "react";
 
 function SettingsButton({ text, selected, onClick }: { text: string, selected: boolean, onClick: () => void }) {
@@ -7,25 +9,41 @@ function SettingsButton({ text, selected, onClick }: { text: string, selected: b
 
 export function GameSettings() {
 	const dependencies = React.useContext(dependencyContext);
+	const [gamemode, setGamemode] = React.useState(Gamemode.Normal);
+	const [botDifficulty, setBotDifficulty] = React.useState(BotDifficulty.Easy);
 
+	React.useEffect(() => {
+		const ctx = Evt.newCtx();
 
+		dependencies.gameState.botDifficultyChanged.attach(ctx, setBotDifficulty);
+		dependencies.gameState.gamemodeChanged.attach(ctx, setGamemode);
+
+		if (gamemode !== dependencies.gameState.gamemode)
+			setGamemode(dependencies.gameState.gamemode);
+		if (botDifficulty !== dependencies.gameState.botDifficulty)
+			setBotDifficulty(dependencies.gameState.botDifficulty);
+
+		return () => {
+			ctx.done();
+		}
+	}, [dependencies.gameState]);
 
 	return <div className="flex-1">
 		<div className="flex flex-row items-center gap-2">
 			<div className="bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl border-2 border-white/20 px-2 py-1 gap-1 m-1">
 				<p className="font-sans font-bold text-title/70 text-xs text-center">BOT DIFFICULTY</p> 
 				<div className="flex flex-row gap-2 m-1">
-					<SettingsButton onClick={() => {}} selected={true} text="Easy"/>
-					<SettingsButton onClick={() => {}} selected={false} text="Medium"/>
-					<SettingsButton onClick={() => {}} selected={false} text="Hard"/>
+					<SettingsButton onClick={() => { dependencies.gameState.botDifficulty = BotDifficulty.Easy }} selected={botDifficulty === BotDifficulty.Easy} text="Easy"/>
+					<SettingsButton onClick={() => { dependencies.gameState.botDifficulty = BotDifficulty.Medium }} selected={botDifficulty === BotDifficulty.Medium} text="Medium"/>
+					<SettingsButton onClick={() => { dependencies.gameState.botDifficulty = BotDifficulty.Hard }} selected={botDifficulty === BotDifficulty.Hard} text="Hard"/>
 				</div>
 			</div>
 			<div className="bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl border-2 border-white/20 px-2 py-1 gap-1 m-1">
 				<p className="font-sans font-bold text-title/70 text-xs text-center">GAMEMODES</p> 
 				<div className="flex flex-row gap-2 m-1">
-					<SettingsButton onClick={() => {}} selected={true} text="Normal"/>
-					<SettingsButton onClick={() => {}} selected={false} text="50 Balls"/>
-					<SettingsButton onClick={() => {}} selected={false} text="Obstacles"/>
+					<SettingsButton onClick={() => { dependencies.gameState.gamemode = Gamemode.Normal }} selected={gamemode === Gamemode.Normal} text="Normal"/>
+					<SettingsButton onClick={() => { dependencies.gameState.gamemode = Gamemode.Ball50 }} selected={gamemode === Gamemode.Ball50} text="50 Balls"/>
+					<SettingsButton onClick={() => { dependencies.gameState.gamemode = Gamemode.Obstacles }} selected={gamemode === Gamemode.Obstacles} text="Obstacles"/>
 				</div>
 			</div>
 		</div>
