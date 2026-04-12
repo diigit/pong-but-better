@@ -1,3 +1,4 @@
+import { SHA512_256 } from "bun";
 import { GameObject } from "./game-objects";
 
 const VERTEX_BUFFER_STARTING_LENGTH = 64; // 32 vertices
@@ -93,7 +94,7 @@ class GpuHandler {
 
 	resizeVertexBuffer(newMinSize: number) {
 		const currentSize = this.vertexBuffer.size;
-		const mul = 2^Math.ceil(Math.log2(newMinSize / currentSize))
+		const mul = Math.pow(2, Math.ceil(Math.log2(newMinSize / currentSize)));
 
 		this.vertexBuffer.destroy()
 		this.vertexBuffer = this.createVertexBuffer(currentSize * mul);

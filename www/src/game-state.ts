@@ -19,6 +19,13 @@ export class GameState {
 		renderer.renderGameObject(this.ball);
 		collider.addCollider(this.ball);
 		
+		this.fakeBalls = []
+		for (let i = 0; i < 100; i++) {
+			this.fakeBalls[i] = new GameObject(new PolygonDescriptor(rect(0, 0, DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE)));
+			renderer.renderGameObject(this.fakeBalls[i] as GameObject);
+			collider.addCollider(this.fakeBalls[i] as GameObject);
+		}
+
 		this.paddleLeft = new PaddleController(point(-CANVAS_WIDTH/2 + (DEFAULT_PADDLE_WIDTH/2 + PADDLE_EDGE_MARGIN), 0));
 		renderer.renderGameObject(this.paddleLeft.paddle);
 		collider.addCollider(this.paddleLeft.paddle);
@@ -65,6 +72,8 @@ export class GameState {
 		this.paddleLeft.step(deltaTime);
 		this.ball.movementStep(deltaTime);
 		this.paddleRight.step(deltaTime);
+
+		this.fakeBalls.forEach((b) => b.movementStep(deltaTime));
 	}
 
 	end() {
@@ -180,6 +189,7 @@ export class GameState {
 	private barriers: Barrier[];
 	private botOpp;
 	private ctx;
+	private fakeBalls;
 
 	private _isGameActive = false;
 	private _selfScore: number = 0;
