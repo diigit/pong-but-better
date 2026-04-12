@@ -42,8 +42,8 @@ export function GameSettings() {
 				<p className="font-sans font-bold text-title/70 text-xs text-center">GAMEMODES</p> 
 				<div className="flex flex-row gap-2 m-1">
 					<SettingsButton onClick={() => { dependencies.gameState.gamemode = Gamemode.Normal }} selected={gamemode === Gamemode.Normal} text="Normal"/>
-					<SettingsButton onClick={() => { dependencies.gameState.gamemode = Gamemode.Ball50 }} selected={gamemode === Gamemode.Ball50} text="50 Balls"/>
 					<SettingsButton onClick={() => { dependencies.gameState.gamemode = Gamemode.Obstacles }} selected={gamemode === Gamemode.Obstacles} text="Obstacles"/>
+					<SettingsButton onClick={() => { dependencies.gameState.gamemode = Gamemode.ManyBalls }} selected={gamemode === Gamemode.ManyBalls} text="Too Many Balls"/>
 				</div>
 			</div>
 		</div>

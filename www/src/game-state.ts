@@ -5,11 +5,14 @@ import { BALL_MASS, BALL_WAIT_TIME, BOT_DIFFICULTY, CANVAS_HEIGHT, CANVAS_WIDTH,
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors";
 import type { PongRenderer } from "./pong-renderer";
 import { Evt } from "evt";
-import { act } from "react";
+
+function randomBetween(min: number, max: number) {
+	return Math.random() * (max - min) + min;
+}
 
 export enum Gamemode {
 	Normal, 
-	Ball50,
+	ManyBalls,
 	Obstacles,
 }
 
@@ -117,7 +120,7 @@ export class GameState {
 			this.end();
 		} else {
 			setTimeout(() => {
-				this.ball.velocity = vector(DEFAULT_BALL_SPEED * (this._selfScore > this._oppScore ? -1 : 1), 0);
+				this.ball.velocity = vector(DEFAULT_BALL_SPEED * (this._selfScore > this._oppScore ? -1 : 1), randomBetween(-150, 150));
 			}, BALL_WAIT_TIME * 1000)
 		}
 	}
@@ -168,8 +171,8 @@ export class GameState {
 
 		let gamemodeHandler;
 		switch (newGamemode) {
-			case Gamemode.Ball50:
-				gamemodeHandler = new Ball50Gamemode(this);
+			case Gamemode.ManyBalls:
+				gamemodeHandler = new ManyBallsGamemode(this);
 				break;
 			case Gamemode.Obstacles:
 				gamemodeHandler = new ObstaclesGamemode(this);
@@ -261,12 +264,8 @@ interface GamemodeHandler {
 	readonly type: Gamemode;
 }
 
-function randomBetween(min: number, max: number) {
-	return Math.random() * (max - min) + min;
-}
-
-class Ball50Gamemode implements GamemodeHandler {
-	public readonly type = Gamemode.Ball50;
+class ManyBallsGamemode implements GamemodeHandler {
+	public readonly type = Gamemode.ManyBalls;
 
 	constructor(readonly gameState: GameState) {
 		
@@ -321,7 +320,7 @@ class Ball50Gamemode implements GamemodeHandler {
 }
 
 class ObstaclesGamemode implements GamemodeHandler {
-	public readonly type = Gamemode.Ball50;
+	public readonly type = Gamemode.Obstacles;
 
 	constructor(readonly gameState: GameState) {
 
