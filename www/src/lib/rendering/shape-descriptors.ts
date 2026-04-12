@@ -1,4 +1,5 @@
 import { Box, matrix, point, Point, segment, Vector, vector, type Circle, type Polygon } from "2d-geometry";
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from "@/constants";
 
 export interface ShapeDescriptor {
 	get vertexCount(): number;
@@ -44,7 +45,14 @@ export class PolygonDescriptor implements ShapeDescriptor {
 			const v2 = clippedVertices[nextIndex] as Point;
 			
 			if (isConvex(v0, v1, v2)) {
-				arr.set([v0.x/512, v0.y/256, v1.x/512, v1.y/256, v2.x/512, v2.y/256], offset + vertexIndex);
+				arr.set([
+					v0.x/CANVAS_WIDTH*2, 
+					v0.y/CANVAS_HEIGHT*2, 
+					v1.x/CANVAS_WIDTH*2, 
+					v1.y/CANVAS_HEIGHT*2, 
+					v2.x/CANVAS_WIDTH*2, 
+					v2.y/CANVAS_HEIGHT*2
+				], offset + vertexIndex);
 				vertexIndex += 6;
 				clippedVertices.splice(i0, 1);
 				

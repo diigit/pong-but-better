@@ -1,8 +1,7 @@
-import { ReceiptRussianRuble } from "lucide-react";
+import { SHA512_256 } from "bun";
 import { GameObject } from "./game-objects";
+import { Evt } from "evt";
 
-const CANVAS_WIDTH = 512;
-const CANVAS_HEIGHT = 256;
 const VERTEX_BUFFER_STARTING_LENGTH = 64; // 32 vertices
 
 let gpuAdapter = await window.navigator.gpu.requestAdapter();
@@ -44,7 +43,7 @@ class GpuHandler {
 
 				@fragment
 				fn fragmentMain() -> @location(0) vec4f {
-					return vec4f(0, 0, 0, 1);
+					return vec4f(1, 1, 1, 1);
 				}
 			`
 		});
@@ -77,13 +76,6 @@ class GpuHandler {
 		});
 
 		this.vertexBuffer = this.createVertexBuffer(32 * VERTEX_BUFFER_STARTING_LENGTH);
-
-		const step = () => {
-			this.render()
-			this.renderLoopId = window.requestAnimationFrame(step);
-		}
-
-		this.renderLoopId = window.requestAnimationFrame(step);
 	}
 
 	createVertexBuffer(size: number): GPUBuffer {
@@ -96,7 +88,7 @@ class GpuHandler {
 
 	resizeVertexBuffer(newMinSize: number) {
 		const currentSize = this.vertexBuffer.size;
-		const mul = 2^Math.ceil(Math.log2(newMinSize / currentSize))
+		const mul = Math.pow(2, Math.ceil(Math.log2(newMinSize / currentSize)));
 
 		this.vertexBuffer.destroy()
 		this.vertexBuffer = this.createVertexBuffer(currentSize * mul);
@@ -134,7 +126,6 @@ class GpuHandler {
 
 	cleanup() {
 		this.vertexBuffer.destroy();
-		window.cancelAnimationFrame(this.renderLoopId);
 	}
 
 	private vertexBuffer: GPUBuffer;
@@ -142,10 +133,11 @@ class GpuHandler {
 	private renderPipeline: GPURenderPipeline;
 	private context: GPUCanvasContext;
 	private numVertices: number = 0;
-	private renderLoopId: number;
 }
 
 export class PongRenderer {
+	public readonly frameRendered = Evt.create<number>();
+
 	constructor() {
 		this.gpu = window.navigator.gpu;
 		if (this.gpu === undefined) Error("WebGPU is not supported by this browser.");
@@ -156,6 +148,7 @@ export class PongRenderer {
 			// TODO cleanup
 			this.canvas = undefined;
 			this.gpuHandler?.cleanup();
+			window.cancelAnimationFrame(this.renderLoopId);
 			return;
 		}
 
@@ -163,6 +156,18 @@ export class PongRenderer {
 
 		this.canvas = canvas;
 		this.gpuHandler = new GpuHandler(canvas);
+
+		const step: FrameRequestCallback = (deltaTime) => {
+			if (this.gpuHandler === undefined) return;
+
+			this.updateTriangles();
+			this.gpuHandler.render()
+			this.renderLoopId = window.requestAnimationFrame(step);
+
+			this.frameRendered.post(deltaTime);
+		}
+
+		this.renderLoopId = window.requestAnimationFrame(step);
 	}
 	
 	updateTriangles() {
@@ -196,6 +201,7 @@ export class PongRenderer {
 	private objects = new Set<GameObject>;
 	private canvas: HTMLCanvasElement | undefined;
 	private gpu: GPU;
+	private renderLoopId = 0;
 
 	private gpuHandler: GpuHandler | undefined;
 }

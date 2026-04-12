@@ -9,21 +9,23 @@ import { createContext, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { PongRenderer } from "./pong-renderer.ts";
-import { AABBCollider } from "./collisions.ts";
+import { AABBCollider, Axis, Barrier } from "./collisions.ts";
 import { GameObject } from "./game-objects.ts";
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors.ts";
 import { rect, vector } from "2d-geometry";
+import { GameState } from "./game-state.ts";
 
 const renderer = new PongRenderer();
 const collider = new AABBCollider();
+const gameState = new GameState(renderer, collider);
 
-export const rendererContext = createContext(renderer);
+export const dependencyContext = createContext({ renderer, gameState });
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
-    <rendererContext.Provider value={renderer}>
+    <dependencyContext.Provider value={{ renderer, gameState }}>
       <App />
-    </rendererContext.Provider>
+    </dependencyContext.Provider>
   </StrictMode>
 );
 
@@ -36,27 +38,12 @@ if (import.meta.hot) {
   createRoot(elem).render(app);
 }
 
-// object collision test
-/* {
-  const UPDATE_INTERVAL = 10; //ms
-  
-  const objectA = new GameObject(new PolygonDescriptor(rect(-256, -32, 64, 64)));
-  objectA.mass = 3;
-  objectA.velocity = vector(0, 0);
-  renderer.renderGameObject(objectA);
-  collider.addCollider(objectA);
-
-  const objectB = new GameObject(new PolygonDescriptor(rect(-256+32+100, -32, 64, 64)));
-  objectB.mass = 1;
-  objectB.superHeavy = true;
-  objectB.velocity = vector(-75, -30);
-  renderer.renderGameObject(objectB);
-  collider.addCollider(objectB);
+// game state test
+{
+  const PHYSICS_UPDATE_HZ = 165; // times per second
 
   setInterval(() => {
-    objectA.movementStep(UPDATE_INTERVAL/1000);
-    objectB.movementStep(UPDATE_INTERVAL/1000);
+    gameState.moveStep(1/PHYSICS_UPDATE_HZ);
     collider.updateColliders();
-    renderer.updateTriangles();
-  }, UPDATE_INTERVAL);
-} */
+  }, 1000/PHYSICS_UPDATE_HZ);
+}
