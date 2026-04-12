@@ -5,6 +5,7 @@ import { BALL_WAIT_TIME, CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors";
 import type { PongRenderer } from "./pong-renderer";
 import { Evt } from "evt";
+import { act } from "react";
 
 export class GameState {
 	public readonly selfScoreChanged = Evt.create<number>();
@@ -34,22 +35,28 @@ export class GameState {
 		this.barriers.forEach((barrier) => collider.addBarrier(barrier));
 
 		this.botOpp = new BotPaddleController(this.paddleRight, this.ball);
+
+		this.ctx = Evt.newCtx();
 	}
 
 	start() {
 		if (this.isGameActive) return;
-		this.isGameActive = true;
-
+		
 		this.selfScore = 0;
 		this.oppScore = 0;
 
 		this.botOpp.start();
 
-		this.barrierCollisionEvent = this.collider.barrierCollisionOccured.attach(this.onBarrierCollision);
-		this.objectCollisionEvent = this.collider.objectCollisionOccured.attach(this.onObjectCollision);
+		this.ctx = Evt.newCtx();
+		this.collider.barrierCollisionOccured.attach(this.ctx, this.onBarrierCollision);
+		this.collider.objectCollisionOccured.attach(this.ctx, this.onObjectCollision);
 
 		window.addEventListener("keydown", this.keyDownFn);
 		window.addEventListener("keyup", this.keyUpFn);
+
+		this.isGameActive = true;
+
+		this.resetBall();
 	}
 
 	moveStep(deltaTime: number) {
@@ -64,21 +71,24 @@ export class GameState {
 		if (!this.isGameActive) return;
 		this.isGameActive = false;
 
+		this.resetBall(true);
+
 		window.removeEventListener("keydown", this.keyDownFn);
 		window.removeEventListener("keyup", this.keyUpFn);
 
 		this.botOpp.stop();
 
-		this.barrierCollisionEvent?.detach();
-		this.objectCollisionEvent?.detach();
+		this.ctx.done();
 	}
 
-	resetBall() {
+	resetBall(ign = false) {
+		if (this.isGameActive === false || ign) return;
+
 		this.ball.velocity = Vector.EMPTY;
 		this.ball.position = Point.EMPTY;
 
-		this.paddleLeft.paddle.position = point(this.paddleLeft.paddle.position.x, 0); 
-		this.paddleRight.paddle.position = point(this.paddleRight.paddle.position.x, 0);
+		this.paddleLeft.reset();
+		this.paddleRight.reset();
 
 		if (this.selfScore >= this.winningScore || this.oppScore >= this.winningScore) {
 			this.end();
@@ -168,9 +178,8 @@ export class GameState {
 	private paddleRight;
 	private ball: GameObject;
 	private barriers: Barrier[];
-	private barrierCollisionEvent: Evt<[object: GameObject, barrier: Barrier]> | undefined;
-	private objectCollisionEvent: Evt<[a: GameObject, b: GameObject]> | undefined;
 	private botOpp;
+	private ctx;
 
 	private _isGameActive = false;
 	private _selfScore: number = 0;
@@ -225,6 +234,11 @@ export class PaddleController {
 				Math.max(this.paddle.position.y, paddleYMin), 
 				paddleYMax)
 			)
+	}
+
+	reset() {
+		this.paddle.velocity = Vector.EMPTY;
+		this.paddle.position = point(this.paddle.position.x, 0); 
 	}
 
 	get speed(): number {
