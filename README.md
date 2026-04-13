@@ -6,6 +6,8 @@ The core of the project is simple: making Pong. Through removing potential abstr
 
 ## Running
 
+You can try it out [here](https://pongbutbetter.com).
+
 ### Project Structure
 
 The project is structured in a manner in which the Rust component is compiled into a Node.js package using wasm-build, then read by the web component built with Bun. The Node.js package directory is the root directory, where the source code will be listed in `/src`. The root directory of the website using Bun is in `/www`. 
