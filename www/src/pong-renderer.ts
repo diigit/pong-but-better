@@ -43,7 +43,7 @@ class GpuHandler {
 
 				@fragment
 				fn fragmentMain() -> @location(0) vec4f {
-					return vec4f(1, 1, 1, 1);
+					return vec4f(0.67843, 0.61961, 0.5098, 1);
 				}
 			`
 		});
