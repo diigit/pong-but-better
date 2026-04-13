@@ -13,6 +13,7 @@ import { AABBCollider, Axis, Barrier } from "./collisions.ts";
 import { GameObject } from "./game-objects.ts";
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors.ts";
 import { rect, vector } from "2d-geometry";
+import '@fontsource/poppins';
 import { GameState } from "./game-state.ts";
 
 const renderer = new PongRenderer();
