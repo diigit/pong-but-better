@@ -44,6 +44,7 @@ export function GameSettings() {
 					<SettingsButton onClick={() => { dependencies.gameState.gamemode = Gamemode.Normal }} selected={gamemode === Gamemode.Normal} text="Normal"/>
 					<SettingsButton onClick={() => { dependencies.gameState.gamemode = Gamemode.Obstacles }} selected={gamemode === Gamemode.Obstacles} text="Obstacles"/>
 					<SettingsButton onClick={() => { dependencies.gameState.gamemode = Gamemode.ManyBalls }} selected={gamemode === Gamemode.ManyBalls} text="Too Many Balls"/>
+					<SettingsButton onClick={() => { dependencies.gameState.gamemode = Gamemode.ExplodeYourPC }} selected={gamemode === Gamemode.ExplodeYourPC} text="Explode Your PC"/>
 				</div>
 			</div>
 		</div>

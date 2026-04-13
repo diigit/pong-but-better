@@ -14,6 +14,7 @@ export enum Gamemode {
 	Normal, 
 	ManyBalls,
 	Obstacles,
+	ExplodeYourPC,
 }
 
 export enum BotDifficulty {
@@ -177,6 +178,9 @@ export class GameState {
 			case Gamemode.Obstacles:
 				gamemodeHandler = new ObstaclesGamemode(this);
 				break;
+			case Gamemode.ExplodeYourPC:
+				gamemodeHandler = new ExplodeYourPCGamemode(this);
+				break;
 		}
 
 		this._gamemode = gamemodeHandler;
@@ -263,6 +267,62 @@ interface GamemodeHandler {
 	readonly gameState: GameState;
 	readonly type: Gamemode;
 }
+
+class ExplodeYourPCGamemode implements GamemodeHandler {
+	public readonly type = Gamemode.ExplodeYourPC;
+
+	constructor(readonly gameState: GameState) {
+		
+	}
+	
+	onStart(): void {
+		for (let i = 0; i < 200; i++) {
+			const sideSize = 16;
+
+			const spawnPositionWidth = CANVAS_WIDTH - sideSize;
+			const spawnPositionHeight = CANVAS_HEIGHT - sideSize;
+			
+			const newBall = new GameObject(new PolygonDescriptor(rect(
+				randomBetween(-spawnPositionWidth/2, spawnPositionWidth/2),
+				randomBetween(-spawnPositionHeight/2, spawnPositionHeight/2),
+				sideSize,
+				sideSize,
+			)))
+
+			newBall.velocity = vector(randomBetween(-100, 100), randomBetween(-100, 100))
+			newBall.mass = randomBetween(.7, 2)
+
+			this.gameState.collider.addCollider(newBall);
+			this.gameState.renderer.renderGameObject(newBall);
+
+			this.balls[i] = newBall;
+		}
+	}
+
+	onStep(deltaTime: number): void {
+		this.balls.forEach((ball) => {
+			ball.movementStep(deltaTime);
+		});
+
+		if (this.gameState.ball.velocity.length < 400) {
+			this.gameState.ball.velocity = this.gameState.ball.velocity.multiply(2);
+		}
+	}
+
+	onEnd(): void {
+		this.balls.forEach((ball) => {
+			this.gameState.collider.removeCollider(ball);
+			this.gameState.renderer.unrenderGameObject(ball);
+		});
+	}
+
+	cleanUp() {
+		                                                                                                                                                                                            
+	}
+
+	private balls = new Array<GameObject>;
+}
+
 
 class ManyBallsGamemode implements GamemodeHandler {
 	public readonly type = Gamemode.ManyBalls;
