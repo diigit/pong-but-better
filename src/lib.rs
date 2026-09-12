@@ -10,3 +10,13 @@ pub fn run() -> Result<(), JsValue> {
 
     Ok(())
 }
+
+#[wasm_bindgen]
+extern "C" {
+    fn alert(message: &str);
+}
+
+#[wasm_bindgen]
+pub fn this_is_a_test(message: &str) {
+    alert(&format!("Oh, a message! What does it say?\n\n \"{message}\"\n\n Oh.. uhhh.. okay.."));
+}

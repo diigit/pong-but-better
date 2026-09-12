@@ -14,6 +14,6 @@ The project is structured in a manner in which the Rust component is compiled in
 
 ### Build & Run Instructions
 
-To build the Node.js package, first ensure you are in the root directory. Grab the cargo dependencies using `cargo c`, then use the script `/wasm-build.sh` for Linux systems. 
+To build the Node.js package, first ensure you are in the root directory. Install [wasm-pack](https://wasm-bindgen.github.io/wasm-pack/installer/), grab the cargo dependencies using `cargo c`, then use the script `/wasm-build.sh` for Linux systems. 
 
 To build and run the website, navigate to the `www` directory (`cd www`), then execute `bun install`. This installs more dependencies. Run the project by executing `bun dev`. 
