@@ -1,6 +1,5 @@
 import { serve } from "bun";
 import index from "./index.html";
-import * as wasm from "wasm-pong-but-better";
 
 const server = serve({
   routes: {

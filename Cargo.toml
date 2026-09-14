@@ -28,6 +28,7 @@ web-sys = { version = "0.3.94", features = [
 nalgebra = "0.35.0"
 specs = { version = "0.20.0", features = ["derive", "shred-derive"]}
 deref = "0.1.6"
+lyon = "1.0.19"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"

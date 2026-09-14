@@ -9,12 +9,10 @@ import { createContext, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { PongRenderer } from "./pong-renderer.ts";
-import { AABBCollider, Axis, Barrier } from "./collisions.ts";
-import { GameObject } from "./game-objects.ts";
-import { PolygonDescriptor } from "./lib/rendering/shape-descriptors.ts";
-import { rect, vector } from "2d-geometry";
+import { AABBCollider} from "./collisions.ts";
 import '@fontsource/poppins';
 import { GameState } from "./game-state.ts";
+import * as wasm from "wasm-pong-but-better";
 
 const renderer = new PongRenderer();
 const collider = new AABBCollider();

@@ -6,7 +6,7 @@ use deref::{Deref, DerefMut};
 use na::{Point2, Vector2};
 use specs::{prelude::*, Component};
 
-type Precision = f32;
+pub type Precision = f32;
 
 #[derive(Debug)]
 pub struct CollidingWith(Entity);
