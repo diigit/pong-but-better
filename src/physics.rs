@@ -9,7 +9,7 @@ use specs::{prelude::*, Component};
 pub type Precision = f32;
 
 #[derive(Debug)]
-pub struct CollidingWith(Entity);
+pub struct CollidingWith(pub Entity);
 
 impl Component for CollidingWith {
     type Storage = FlaggedStorage<Self, DenseVecStorage<Self>>;
@@ -21,26 +21,26 @@ pub struct Anchored;
 
 #[derive(Debug, Component, Deref, Clone, Copy)]
 #[storage(VecStorage)]
-pub struct Mass(#[auto_ref] Precision);
+pub struct Mass(#[auto_ref] pub Precision);
 
 #[derive(Debug, Component, Default, DerefMut)]
 #[storage(VecStorage)]
-pub struct Position(#[auto_ref] Point2<Precision>);
+pub struct Position(#[auto_ref] pub Point2<Precision>);
 
 #[derive(Debug, Component, Default, DerefMut)]
 #[storage(VecStorage)]
-pub struct Velocity(#[auto_ref] Vector2<Precision>);
+pub struct Velocity(#[auto_ref] pub Vector2<Precision>);
 
 #[derive(Debug, Component, Default, DerefMut)]
 #[storage(VecStorage)]
-pub struct Acceleration(#[auto_ref] Vector2<Precision>);
+pub struct Acceleration(#[auto_ref] pub Vector2<Precision>);
 
 #[derive(Debug, Component, Default, DerefMut)]
 #[storage(VecStorage)]
-pub struct Bounds(#[auto_ref] Vector2<Precision>);
+pub struct Bounds(#[auto_ref] pub Vector2<Precision>);
 
-#[derive(Default, Deref)]
-pub struct TimeDelta(#[auto_ref] f32);
+#[derive(Default, DerefMut)]
+pub struct TimeDelta(#[auto_ref] pub f32);
 
 pub struct Movement;
 

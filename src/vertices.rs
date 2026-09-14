@@ -1,5 +1,7 @@
 use deref::{Deref, DerefMut};
-use nalgebra::Point2;
+use lyon::{path::{builder::NoAttributes, path_buffer::Builder}, tessellation::{
+    FillBuilder, FillOptions, FillTessellator, VertexBuffers, geometry_builder::simple_builder,
+}};
 use specs::{prelude::*, Component};
 
 use crate::{
@@ -16,7 +18,7 @@ pub struct Visible;
 pub struct ShapeComp(#[auto_ref] Shape);
 
 #[derive(Debug, DerefMut, Default)]
-pub struct Vertices(#[auto_ref] Vec<Point2<Precision>>);
+pub struct Vertices(#[auto_ref] VertexBuffers<lyon::math::Point, u16>);
 
 pub struct Tessellation;
 
@@ -35,13 +37,18 @@ impl<'a> System<'a> for Tessellation {
     fn run(&mut self, mut data: Self::SystemData) {
         data.vertices.clear();
 
+        let mut geo_builder = simple_builder(&mut **data.vertices);
+        let mut tessellator = FillTessellator::new();
+		let fill_opts = FillOptions::tolerance(0.1);
+        let mut builder = tessellator.builder(&fill_opts, &mut geo_builder);
+
         for (shape, position, bounds, _) in
             (&data.shape, &data.position, &data.bounds, &data.visible).join()
         {
-			shape.write_vertices(&mut data.vertices, **position, **bounds);
-		}
+            shape.write_vertices(&mut builder, **position, **bounds);
+        }
 
-		// Todo: Send result to typescript side
+		let _ = builder.build();
     }
 }
 
