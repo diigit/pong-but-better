@@ -1,11 +1,19 @@
 extern crate nalgebra as na;
 
+use std::collections::HashSet;
+
 use deref::{Deref, DerefMut};
 use na::{Point2, Vector2};
-
 use specs::{prelude::*, Component};
 
 type Precision = f32;
+
+#[derive(Debug)]
+pub struct CollidingWith(Entity);
+
+impl Component for CollidingWith {
+    type Storage = FlaggedStorage<Self, DenseVecStorage<Self>>;
+}
 
 #[derive(Debug, Component)]
 #[storage(NullStorage)]
@@ -15,19 +23,19 @@ pub struct Anchored;
 #[storage(VecStorage)]
 pub struct Mass(#[auto_ref] Precision);
 
-#[derive(Debug, Component, DerefMut)]
+#[derive(Debug, Component, Default, DerefMut)]
 #[storage(VecStorage)]
 pub struct Position(#[auto_ref] Point2<Precision>);
 
-#[derive(Debug, Component, DerefMut)]
+#[derive(Debug, Component, Default, DerefMut)]
 #[storage(VecStorage)]
 pub struct Velocity(#[auto_ref] Vector2<Precision>);
 
-#[derive(Debug, Component, DerefMut)]
+#[derive(Debug, Component, Default, DerefMut)]
 #[storage(VecStorage)]
 pub struct Acceleration(#[auto_ref] Vector2<Precision>);
 
-#[derive(Debug, Component, DerefMut)]
+#[derive(Debug, Component, Default, DerefMut)]
 #[storage(VecStorage)]
 pub struct Bounds(#[auto_ref] Vector2<Precision>);
 
@@ -73,6 +81,7 @@ pub struct CollisionsSystemData<'a> {
     anchored: ReadStorage<'a, Anchored>,
     mass: ReadStorage<'a, Mass>,
     entities: Entities<'a>,
+    colliding_with: WriteStorage<'a, CollidingWith>,
 }
 
 pub struct CollidableObject<'a> {
@@ -81,6 +90,7 @@ pub struct CollidableObject<'a> {
     pub bounds: &'a Bounds,
     pub mass: &'a Mass,
     pub anchored: bool,
+    pub entity_id: Entity,
 }
 
 impl<'a>
@@ -89,6 +99,7 @@ impl<'a>
         &'a mut Velocity,
         &'a Bounds,
         &'a Mass,
+        Entity,
         bool,
     )> for CollidableObject<'a>
 {
@@ -98,6 +109,7 @@ impl<'a>
             &'a mut Velocity,
             &'a Bounds,
             &'a Mass,
+            Entity,
             bool,
         ),
     ) -> Self {
@@ -106,7 +118,8 @@ impl<'a>
             velocity: t.1,
             bounds: t.2,
             mass: t.3,
-            anchored: t.4,
+            anchored: t.5,
+            entity_id: t.4,
         }
     }
 }
@@ -210,10 +223,10 @@ impl Collisions {
         let mass_i = **entity_i.mass;
         let mass_j = **entity_j.mass;
 
-        let r = 1.0/(mass_i + mass_j);
+        let r = 1.0 / (mass_i + mass_j);
 
-        let vel_i = (mass_i - mass_j)*r*init_vel_i + 2.0*mass_j*r*init_vel_j;
-        let vel_j = (mass_j - mass_i)*r*init_vel_j + 2.0*mass_i*r*init_vel_i;
+        let vel_i = (mass_i - mass_j) * r * init_vel_i + 2.0 * mass_j * r * init_vel_j;
+        let vel_j = (mass_j - mass_i) * r * init_vel_j + 2.0 * mass_i * r * init_vel_i;
 
         entity_i.velocity[displace.dim()] = vel_i;
         entity_j.velocity[displace.dim()] = vel_j;
@@ -236,8 +249,10 @@ impl<'a> System<'a> for Collisions {
             .join()
             .map(|e| {
                 let entity_is_anchored = anchored.contains(e.4);
-                CollidableObject::from((e.0, e.1, e.2, e.3, entity_is_anchored))
+                CollidableObject::from((e.0, e.1, e.2, e.3, e.4, entity_is_anchored))
             });
+
+        let mut collided: HashSet<(Entity, Entity)> = HashSet::new();
 
         while let Some(mut entity_i) = iter.next() {
             for mut entity_j in &mut iter {
@@ -253,8 +268,131 @@ impl<'a> System<'a> for Collisions {
                     }
 
                     Self::collide(displace, &mut entity_i, &mut entity_j);
+
+                    collided.insert((entity_i.entity_id, entity_j.entity_id));
                 }
             }
         }
+
+        let mut remove: HashSet<Entity> = HashSet::new();
+
+        for (entity, colliding_with) in (&data.entities, &data.colliding_with).join() {
+            if !collided.contains(&(entity, colliding_with.0)) {
+                remove.insert(entity);
+            }
+        }
+
+        for entity in remove {
+            data.colliding_with.remove(entity);
+        }
+
+        for (entity_i, entity_j) in collided {
+            let _ = data
+                .colliding_with
+                .insert(entity_i, CollidingWith(entity_j));
+            let _ = data
+                .colliding_with
+                .insert(entity_j, CollidingWith(entity_i));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use specs::storage::SliceAccess;
+
+    use super::*;
+
+    #[derive(Default)]
+    pub struct CollisionFlag(bool);
+
+    pub struct CollisionDetector {
+        pub reader_id: ReaderId<ComponentEvent>,
+        pub inserted: BitSet,
+    }
+
+    impl<'a> System<'a> for CollisionDetector {
+        type SystemData = (
+            ReadStorage<'a, CollidingWith>,
+            Entities<'a>,
+            Write<'a, CollisionFlag>,
+        );
+
+        fn run(&mut self, (colliding_with, entities, mut collision_flag): Self::SystemData) {
+            self.inserted.clear();
+
+            let events = colliding_with.channel().read(&mut self.reader_id);
+
+            for event in events {
+                match event {
+                    ComponentEvent::Inserted(id) => {
+                        self.inserted.add(*id);
+                    }
+                    _ => {}
+                }
+            }
+
+            for _ in (&self.inserted).join() {
+                collision_flag.0 = true;
+            }
+        }
+    }
+
+    #[test]
+    fn collision_test() {
+        let mut world = World::new();
+        world.register::<CollidingWith>();
+
+        let collision_detector = CollisionDetector {
+            reader_id: world.write_storage::<CollidingWith>().register_reader(),
+            inserted: BitSet::new(),
+        };
+
+        let mut dispatcher = DispatcherBuilder::new()
+            .with(Movement, "movement", &[])
+            .with(Collisions, "collisions", &["movement"])
+            .with(collision_detector, "collision_detector", &["collisions"])
+            .build();
+        dispatcher.setup(&mut world);
+
+        let mut create_entity = |position: Position, velocity: Velocity, mass: Mass| {
+            let _ = world
+                .create_entity()
+                .with(position)
+                .with(velocity)
+                .with(Acceleration(Vector2::new(0.0, 0.0)))
+                .with(Bounds(Vector2::new(1.0, 1.0)))
+                .with(mass);
+        };
+
+        create_entity(
+            Position(Point2::origin()),
+            Velocity(Vector2::new(0.6, 1.0)),
+            Mass(2.0),
+        );
+        create_entity(
+            Position(Point2::new(5.0, 0.0)),
+            Velocity(Vector2::new(-1.0, 1.0)),
+            Mass(3.0),
+        );
+
+        *world.write_resource::<TimeDelta>() = TimeDelta(0.005);
+        for _ in 0..1000 {
+            dispatcher.dispatch(&world);
+        }
+
+        world.maintain();
+
+        assert!(world.read_resource::<CollisionFlag>().0);
+
+        let velocities: Vec<Velocity> = world
+            .read_component::<Velocity>()
+            .as_slice()
+            .iter()
+            .map(|c| unsafe { c.assume_init_read() })
+            .collect();
+
+        assert!((velocities[0].x + 1.32).abs() < 0.01);
+        assert!((velocities[1].x - 0.28).abs() < 0.01);
     }
 }
