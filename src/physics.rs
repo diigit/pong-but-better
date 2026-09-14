@@ -299,8 +299,6 @@ impl<'a> System<'a> for Collisions {
 
 #[cfg(test)]
 mod tests {
-    use specs::storage::SliceAccess;
-
     use super::*;
 
     #[derive(Default)]
