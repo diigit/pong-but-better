@@ -1,5 +1,6 @@
 mod utils;
 mod physics;
+mod vertices;
 
 use wasm_bindgen::prelude::*;
 
