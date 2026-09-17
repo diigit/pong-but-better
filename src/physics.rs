@@ -137,10 +137,6 @@ pub struct CollisionDisplace {
 }
 
 impl CollisionDisplace {
-    pub fn from_vec2(vec2: Vector2<Precision>) -> Self {
-        Self::from_xy(vec2.x, vec2.y)
-    }
-
     pub fn from_xy(x: Precision, y: Precision) -> Self {
         if x.abs() > y.abs() {
             Self {
@@ -312,11 +308,10 @@ mod tests {
     impl<'a> System<'a> for CollisionDetector {
         type SystemData = (
             ReadStorage<'a, CollidingWith>,
-            Entities<'a>,
             Write<'a, CollisionFlag>,
         );
 
-        fn run(&mut self, (colliding_with, entities, mut collision_flag): Self::SystemData) {
+        fn run(&mut self, (colliding_with, mut collision_flag): Self::SystemData) {
             self.inserted.clear();
 
             let events = colliding_with.channel().read(&mut self.reader_id);

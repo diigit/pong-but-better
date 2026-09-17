@@ -1,11 +1,11 @@
 use deref::{Deref, DerefMut};
-use lyon::{math::Point, path::{builder::NoAttributes, path_buffer::Builder}, tessellation::{
+use lyon::{math::Point, path::{builder::NoAttributes}, tessellation::{
     BuffersBuilder, FillBuilder, FillOptions, FillTessellator, VertexBuffers, geometry_builder::{Positions, simple_builder},
 }};
-use specs::{Component, prelude::*, storage::AccessMut};
+use specs::{Component, prelude::*};
 
 use crate::{
-    physics::{Bounds, Position, Precision},
+    physics::{Bounds, Position},
     shapes::Shape,
 };
 
@@ -50,12 +50,4 @@ impl<'a> System<'a> for Tessellation {
 
 		    let _ = builder.build();  
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_tesselation() {}
 }
