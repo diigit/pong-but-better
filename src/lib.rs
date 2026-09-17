@@ -15,7 +15,7 @@ pub fn run() -> Result<(), JsValue> {
     Ok(())
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(module="/www/src/frontend.tsx")]
 extern "C" {
     fn send_vertices(ptr: *const f32, len: usize); 
 }
