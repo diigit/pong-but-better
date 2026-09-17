@@ -12,7 +12,8 @@ import { PongRenderer } from "./pong-renderer.ts";
 import { AABBCollider} from "./collisions.ts";
 import '@fontsource/poppins';
 import { GameState } from "./game-state.ts";
-import * as wasm from "wasm-pong-but-better";
+import { Backend } from "wasm-pong-but-better";
+import { memory } from "wasm-pong-but-better/pong_but_better_bg.wasm";
 
 const renderer = new PongRenderer();
 const collider = new AABBCollider();
@@ -45,4 +46,9 @@ if (import.meta.hot) {
     gameState.moveStep(1/PHYSICS_UPDATE_HZ);
     collider.updateColliders();
   }, 1000/PHYSICS_UPDATE_HZ);
+}
+
+export function send_vertices(ptr: number, length: number) {
+  let array = new Float32Array(memory.buffer, ptr, length);
+  renderer.setVertices(array);
 }

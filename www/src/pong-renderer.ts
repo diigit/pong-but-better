@@ -160,7 +160,7 @@ export class PongRenderer {
 		const step: FrameRequestCallback = (deltaTime) => {
 			if (this.gpuHandler === undefined) return;
 
-			this.updateTriangles();
+			//this.updateTriangles();
 			this.gpuHandler.render()
 			this.renderLoopId = window.requestAnimationFrame(step);
 
@@ -168,6 +168,10 @@ export class PongRenderer {
 		}
 
 		this.renderLoopId = window.requestAnimationFrame(step);
+	}
+
+	setVertices(vertices: Float32Array) {
+		this.gpuHandler?.writeTriangles(vertices);
 	}
 	
 	updateTriangles() {
