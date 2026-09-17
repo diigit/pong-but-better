@@ -1,8 +1,8 @@
 use deref::{Deref, DerefMut};
-use lyon::{path::{builder::NoAttributes, path_buffer::Builder}, tessellation::{
-    FillBuilder, FillOptions, FillTessellator, VertexBuffers, geometry_builder::simple_builder,
+use lyon::{math::Point, path::{builder::NoAttributes, path_buffer::Builder}, tessellation::{
+    BuffersBuilder, FillBuilder, FillOptions, FillTessellator, VertexBuffers, geometry_builder::{Positions, simple_builder},
 }};
-use specs::{prelude::*, Component};
+use specs::{Component, prelude::*, storage::AccessMut};
 
 use crate::{
     physics::{Bounds, Position, Precision},
@@ -18,7 +18,7 @@ pub struct Visible;
 pub struct ShapeComp(#[auto_ref] Shape);
 
 #[derive(Debug, DerefMut, Default)]
-pub struct Vertices(#[auto_ref] VertexBuffers<lyon::math::Point, u16>);
+pub struct Vertices(#[auto_ref] VertexBuffers<Point, u16>);
 
 pub struct Tessellation;
 
@@ -36,19 +36,19 @@ impl<'a> System<'a> for Tessellation {
 
     fn run(&mut self, mut data: Self::SystemData) {
         data.vertices.clear();
-
-        let mut geo_builder = simple_builder(&mut **data.vertices);
-        let mut tessellator = FillTessellator::new();
-		let fill_opts = FillOptions::tolerance(0.1);
-        let mut builder = tessellator.builder(&fill_opts, &mut geo_builder);
+        
+        let mut geo_builder: BuffersBuilder<'_, Point, u16, Positions> = simple_builder(&mut **data.vertices);
+        let mut tessellator: FillTessellator = FillTessellator::new();
+		let fill_opts: FillOptions = FillOptions::tolerance(0.1);
+        let mut builder: NoAttributes<FillBuilder<'_>> = tessellator.builder(&fill_opts, &mut geo_builder);
 
         for (shape, position, bounds, _) in
-            (&data.shape, &data.position, &data.bounds, &data.visible).join()
-        {
-            shape.write_vertices(&mut builder, **position, **bounds);
-        }
+                (&data.shape, &data.position, &data.bounds, &data.visible).join()
+            {
+                shape.write_vertices(&mut builder, **position, **bounds);
+            }
 
-		let _ = builder.build();
+		    let _ = builder.build();  
     }
 }
 

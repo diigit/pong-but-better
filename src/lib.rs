@@ -7,6 +7,9 @@ mod shapes;
 use wasm_bindgen::prelude::*;
 
 use utils::set_panic_hook;
+use web_sys::js_sys;
+
+use crate::backend::Backend;
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {
@@ -23,4 +26,9 @@ extern "C" {
 #[wasm_bindgen]
 pub fn this_is_a_test(message: &str) {
     alert(&format!("Oh, a message! What does it say?\n\n \"{message}\"\n\n Oh.. uhhh.. okay.."));
+}
+
+#[wasm_bindgen]
+pub fn start_backend(send_vertices: &js_sys::Function) {
+
 }
