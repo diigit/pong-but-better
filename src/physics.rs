@@ -20,24 +20,42 @@ impl Component for CollidingWith {
 pub struct Anchored;
 
 #[derive(Debug, Component, Deref, Clone, Copy)]
-#[storage(VecStorage)]
+#[storage(DefaultVecStorage)]
 pub struct Mass(#[auto_ref] pub Precision);
 
+impl Default for Mass {
+    fn default() -> Self {
+        Self(1.0)
+    }
+}
+
 #[derive(Debug, Component, Default, DerefMut)]
-#[storage(VecStorage)]
+#[storage(DefaultVecStorage)]
 pub struct Position(#[auto_ref] pub Point2<Precision>);
 
 #[derive(Debug, Component, Default, DerefMut)]
-#[storage(VecStorage)]
+#[storage(DefaultVecStorage)]
 pub struct Velocity(#[auto_ref] pub Vector2<Precision>);
 
-#[derive(Debug, Component, Default, DerefMut)]
-#[storage(VecStorage)]
+#[derive(Debug, Component, DerefMut)]
+#[storage(DefaultVecStorage)]
 pub struct Acceleration(#[auto_ref] pub Vector2<Precision>);
 
-#[derive(Debug, Component, Default, DerefMut)]
-#[storage(VecStorage)]
+impl Default for Acceleration {
+    fn default() -> Self {
+        Self(Vector2::new(0.0, 0.0))
+    }
+}
+
+#[derive(Debug, Component, DerefMut)]
+#[storage(DefaultVecStorage)]
 pub struct Bounds(#[auto_ref] pub Vector2<Precision>);
+
+impl Default for Bounds {
+    fn default() -> Self {
+        Self(Vector2::new(1.0, 1.0))
+    }
+}
 
 #[derive(Default, DerefMut)]
 pub struct TimeDelta(#[auto_ref] pub f32);
@@ -293,8 +311,28 @@ impl<'a> System<'a> for Collisions {
     }
 }
 
+pub fn create_moving_entity(
+    world: &mut World,
+    position: Position,
+    velocity: Velocity,
+    acceleration: Acceleration,
+    bounds: Bounds,
+    mass: Mass,
+) {
+    let _ = world
+        .create_entity()
+        .with(position)
+        .with(velocity)
+        .with(acceleration)
+        .with(bounds)
+        .with(mass)
+        .build();
+}
+
 #[cfg(test)]
 mod tests {
+    use nalgebra::{point, vector};
+
     use super::*;
 
     #[derive(Default)]
@@ -306,10 +344,7 @@ mod tests {
     }
 
     impl<'a> System<'a> for CollisionDetector {
-        type SystemData = (
-            ReadStorage<'a, CollidingWith>,
-            Write<'a, CollisionFlag>,
-        );
+        type SystemData = (ReadStorage<'a, CollidingWith>, Write<'a, CollisionFlag>);
 
         fn run(&mut self, (colliding_with, mut collision_flag): Self::SystemData) {
             self.inserted.clear();
@@ -335,6 +370,7 @@ mod tests {
     fn collision_test() {
         let mut world = World::new();
         world.register::<CollidingWith>();
+        world.register::<Acceleration>();
 
         let collision_detector = CollisionDetector {
             reader_id: world.write_storage::<CollidingWith>().register_reader(),
@@ -348,24 +384,21 @@ mod tests {
             .build();
         dispatcher.setup(&mut world);
 
-        let mut create_entity = |position: Position, velocity: Velocity, mass: Mass| {
-            let _ = world
-                .create_entity()
-                .with(position)
-                .with(velocity)
-                .with(Acceleration(Vector2::new(0.0, 0.0)))
-                .with(Bounds(Vector2::new(1.0, 1.0)))
-                .with(mass);
-        };
-
-        create_entity(
-            Position(Point2::origin()),
-            Velocity(Vector2::new(0.6, 1.0)),
+        create_moving_entity(
+            &mut world,
+            Position(point![0.0, 0.0]),
+            Velocity(vector![0.6, 1.0]),
+            Acceleration::default(),
+            Bounds::default(),
             Mass(2.0),
         );
-        create_entity(
-            Position(Point2::new(5.0, 0.0)),
-            Velocity(Vector2::new(-1.0, 1.0)),
+
+        create_moving_entity(
+            &mut world,
+            Position(point![5.0, 0.0]),
+            Velocity(vector![-1.0, 1.0]),
+            Acceleration::default(),
+            Bounds::default(),
             Mass(3.0),
         );
 
@@ -378,14 +411,11 @@ mod tests {
 
         assert!(world.read_resource::<CollisionFlag>().0);
 
-        let velocities: Vec<Velocity> = world
-            .read_component::<Velocity>()
-            .as_slice()
-            .iter()
-            .map(|c| unsafe { c.assume_init_read() })
-            .collect();
+        let a = world.read_component::<Velocity>();
+        let b = a.as_slice();
+        println!("{:?}", b);
 
-        assert!((velocities[0].x + 1.32).abs() < 0.01);
-        assert!((velocities[1].x - 0.28).abs() < 0.01);
+        assert!((b[0].x + 1.32).abs() < 0.01);
+        assert!((b[1].x - 0.28).abs() < 0.01);
     }
 }
