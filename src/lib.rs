@@ -3,6 +3,7 @@ mod physics;
 mod vertices;
 mod backend;
 mod shapes;
+mod interactables;
 
 use wasm_bindgen::prelude::*;
 

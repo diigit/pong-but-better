@@ -6,6 +6,8 @@ use deref::{Deref, DerefMut};
 use na::{Point2, Vector2};
 use specs::{prelude::*, Component};
 
+use crate::shapes::Shape;
+
 pub type Precision = f32;
 
 #[derive(Debug)]
@@ -318,15 +320,16 @@ pub fn create_moving_entity(
     acceleration: Acceleration,
     bounds: Bounds,
     mass: Mass,
-) {
-    let _ = world
+) -> Entity {
+    world
         .create_entity()
         .with(position)
         .with(velocity)
         .with(acceleration)
         .with(bounds)
         .with(mass)
-        .build();
+        .with(Shape::AxisAlignedBox)
+        .build()
 }
 
 #[cfg(test)]
