@@ -24,12 +24,12 @@ pub enum Command {
 }
 
 #[wasm_bindgen]
-pub struct Backend {
+pub struct GameController {
     transmitter: mpsc::Sender<Command>,
 }
 
 #[wasm_bindgen]
-impl Backend {
+impl GameController {
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel::<Command>();
 

@@ -6,7 +6,7 @@ import { PongRenderer } from "./pong-renderer.ts";
 import { AABBCollider } from "./collisions.ts";
 import '@fontsource/poppins';
 import { GameState } from "./game-state.ts";
-import { Backend } from '../pkg/pong_but_better';
+import { GameController } from '../pkg/pong_but_better';
 
 const renderer = new PongRenderer();
 const collider = new AABBCollider();
@@ -22,4 +22,4 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-Backend.new();
+GameController.new();
