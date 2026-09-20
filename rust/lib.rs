@@ -1,10 +1,10 @@
 mod interactables;
-mod physics;
+mod movement;
 mod shapes;
 mod utils;
-mod vertices;
+mod triangulation;
+mod collisions;
 
-use specs::prelude::*;
 use std::{sync::mpsc, time::Instant};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_test::console_log;
@@ -13,8 +13,8 @@ use crate::{
     interactables::{
         BotController, GameDifficulty, GameSettings, PlayerController, PlayerVerticalVelocity,
     },
-    physics::{Collisions, Movement, TimeDelta},
-    vertices::Tessellation,
+    movement::{Collisions, Movement, TimeDelta},
+    triangulation::Tessellation,
 };
 
 #[wasm_bindgen]

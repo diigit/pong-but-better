@@ -4,12 +4,10 @@ use lyon::{
     tessellation::FillBuilder,
 };
 use nalgebra::{Point2, Vector2};
-use specs::{prelude::*, Component};
 
-use crate::physics::Precision;
+use crate::movement::Precision;
 
-#[derive(Debug, Component)]
-#[storage(VecStorage)]
+#[derive(Debug)]
 pub enum Shape {
     AxisAlignedBox,
 }
