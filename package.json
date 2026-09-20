@@ -4,10 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "pnpm wasm-dev && vite",
     "build": "wasm-pack build && vite build && tsc -b",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "wasm-dev": "wasm-pack build --dev --target bundler",
+    "wasm": "wasm-pack build --target bundler"
   },
   "dependencies": {
     "2d-geometry": "^3.0.0",
