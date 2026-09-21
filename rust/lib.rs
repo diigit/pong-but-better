@@ -1,32 +1,36 @@
-mod interactables;
-mod movement;
-mod shapes;
-mod utils;
-mod triangulation;
 mod collisions;
+mod movement;
+mod objects;
+mod shapes;
+mod triangulation;
+mod utils;
 
-use std::{sync::mpsc, time::Instant};
+use hecs::World;
+use std::{
+    sync::mpsc::{self, Receiver},
+    time::Instant,
+};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_test::console_log;
 
-use crate::{
-    interactables::{
-        BotController, GameDifficulty, GameSettings, PlayerController, PlayerVerticalVelocity,
-    },
-    movement::{Collisions, Movement, TimeDelta},
-    triangulation::Tessellation,
-};
+use crate::triangulation::TriangulationSystem;
+
+#[wasm_bindgen]
+pub struct CanvasSize {
+    x: f32,
+    y: f32,
+}
 
 #[wasm_bindgen]
 pub enum Command {
-    SetSettings(GameSettings),
+    SetPaused(bool),
     SetPlayerVelocity(f32),
+    SetCanvasSize(CanvasSize),
 }
 
 #[wasm_bindgen]
 pub struct GameController {
     transmitter: mpsc::Sender<Command>,
-    reciever: mpsc::Receiver<Command>,
 }
 
 #[wasm_bindgen]
@@ -34,56 +38,39 @@ impl GameController {
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel::<Command>();
 
-        Self { transmitter: tx, reciever: rx }
+        Self::run_rx(rx);
+
+        Self { transmitter: tx }
     }
 
     pub fn send_command(&self, command: Command) {
         self.transmitter.send(command).unwrap();
     }
 
-    pub fn run(&self) {
+    fn run_rx(rx: Receiver<Command>) {
         let mut world = World::new();
-        world.insert::<GameSettings>(GameSettings {
-            difficulty: GameDifficulty::Easy,
-            canvas_size_x: 0.0,
-            canvas_size_y: 0.0,
-        });
-        world.insert::<PlayerVerticalVelocity>(PlayerVerticalVelocity(0.0));
-        world.insert::<TimeDelta>(TimeDelta(0.0));
 
-        let mut dispatcher = DispatcherBuilder::new()
-            .with(Movement, "movement", &[])
-            .with(Collisions, "collisions", &["movement"])
-            .with(BotController, "bot controls", &["movement"])
-            .with(PlayerController, "player controls", &["movement"])
-            .with_thread_local(Tessellation)
-            .build();
+        let performance = web_sys::window().unwrap().performance().unwrap();
+        let mut triangulation_sys = TriangulationSystem::default();
 
-        dispatcher.setup(&mut world);
+        let _ = objects::PlayerPaddleSystem::create(&mut world);
+        let _ = objects::BotPaddleSystem::create(&mut world);
+        let _ = objects::BallSystem::create(&mut world);
 
-        let mut time_last = Instant::now();
+        let mut time_last = performance.now();
         loop {
-            console_log!("Hello!");
-
-            let time_now = Instant::now();
-            let time_delta = (time_now - time_last).as_secs_f32();
+            let time_now = performance.now();
+            let time_delta = (time_now - time_last) as f32;
             time_last = time_now;
 
-            for cmd in self.reciever.try_iter() {
-                match cmd {
-                    Command::SetPlayerVelocity(new_velocity) => {
-                        *world.write_resource::<PlayerVerticalVelocity>() =
-                            PlayerVerticalVelocity(new_velocity);
-                    }
-
-                    Command::SetSettings(settings) => {
-                        *world.write_resource::<GameSettings>() = settings;
-                    }
-                }
+            for cmd in rx.try_iter() {
+                objects::execute_command(&mut world, cmd);
             }
 
-            *world.write_resource::<TimeDelta>() = TimeDelta(time_delta);
-            dispatcher.dispatch(&world);
+            movement::run_movement(&mut world, time_delta);
+            collisions::run_collisions(&mut world);
+            objects::run_objects(&mut world, time_delta);
+            triangulation_sys.run_triangulation(&mut world);
         }
     }
 }

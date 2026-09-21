@@ -179,3 +179,13 @@ pub fn run_collisions(world: &mut World) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn collision_test() {
+        // TODO
+    }
+}

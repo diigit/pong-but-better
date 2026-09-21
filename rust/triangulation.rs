@@ -21,7 +21,8 @@ pub struct Visible;
 #[derive(Debug, DerefMut, Default)]
 pub struct Vertices(#[auto_ref] VertexBuffers<Point, u16>);
 
-struct TriangulationSystem {
+#[derive(Default)]
+pub struct TriangulationSystem {
     buffers: Vertices,
 }
 

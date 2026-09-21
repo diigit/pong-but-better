@@ -14,7 +14,6 @@ const gameState = new GameState(renderer, collider);
 
 async function run_game_controller() {
   let game_controller = GameController.new();
-  game_controller.run();
 }
 
 run_game_controller().catch((e) => {
