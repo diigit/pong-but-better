@@ -1,5 +1,6 @@
+import { GameController } from "../pkg/pong_but_better";
+import { memory } from "../pkg/pong_but_better_bg.wasm";
 import { GameObject } from "./game-objects";
-import { Evt } from "evt";
 
 const VERTEX_BUFFER_STARTING_LENGTH = 64; // 32 vertices
 
@@ -135,8 +136,7 @@ class GpuHandler {
 }
 
 export class PongRenderer {
-	public readonly frameRendered = Evt.create<number>();
-
+	//private game_controller: GameController
 	constructor() {
 		this.gpu = window.navigator.gpu;
 		if (this.gpu === undefined) Error("WebGPU is not supported by this browser.");
@@ -156,14 +156,13 @@ export class PongRenderer {
 		this.canvas = canvas;
 		this.gpuHandler = new GpuHandler(canvas);
 
-		const step: FrameRequestCallback = (deltaTime) => {
+		const step: FrameRequestCallback = () => {
 			if (this.gpuHandler === undefined) return;
 
-			//this.updateTriangles();
+			//let bufData = this.game_controller.get_vertex_buffer();
+			//this.gpuHandler.writeTriangles(new Float32Array(memory.buffer, bufData.ptr, bufData.len))
 			this.gpuHandler.render()
 			this.renderLoopId = window.requestAnimationFrame(step);
-
-			this.frameRendered.post(deltaTime);
 		}
 
 		this.renderLoopId = window.requestAnimationFrame(step);

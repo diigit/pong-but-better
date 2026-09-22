@@ -249,8 +249,8 @@ pub fn run_objects(world: &mut World, time_delta: Precision) {
     BallSystem::run(world, time_delta);
 }
 
-pub fn execute_command(world: &mut World, command: Command) {
-    PlayerPaddleSystem::exec_cmd(world, &command);
-    BotPaddleSystem::exec_cmd(world, &command);
-    BallSystem::exec_cmd(world, &command);
+pub fn execute_command(world: &mut World, command: &Command) {
+    PlayerPaddleSystem::exec_cmd(world, command);
+    BotPaddleSystem::exec_cmd(world, command);
+    BallSystem::exec_cmd(world, command);
 }

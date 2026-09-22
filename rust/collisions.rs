@@ -3,7 +3,10 @@ extern crate nalgebra as na;
 use hecs::{Entity, World};
 use nalgebra::Vector2;
 
-use crate::movement::*;
+use crate::{
+    movement::*,
+    shapes::Shape,
+};
 
 pub struct IgnoreCollisions;
 
@@ -14,7 +17,7 @@ pub fn spawn_collidable(
     bounds: Bounds,
     mass: Mass,
 ) -> Entity {
-    world.spawn((position, velocity, bounds, mass))
+    world.spawn((position, velocity, bounds, mass, Shape::AxisAlignedBox))
 }
 
 pub struct CollidableObject<'a> {
@@ -155,13 +158,8 @@ pub fn collide(
 
 pub fn run_collisions(world: &mut World) {
     let mut query_iter = world
-        .query_mut::<(
-            Entity,
-            &mut Position,
-            &mut Velocity,
-            &Bounds,
-            &Mass,
-        )>().without::<&IgnoreCollisions>()
+        .query_mut::<(Entity, &mut Position, &mut Velocity, &Bounds, &Mass)>()
+        .without::<&IgnoreCollisions>()
         .into_iter()
         .map(CollidableObject::from);
 
@@ -169,7 +167,7 @@ pub fn run_collisions(world: &mut World) {
 
     while let Some(mut entity_i) = query_iter.next() {
         for mut entity_j in &mut query_iter {
-            if let Some(displace) = are_colliding(&entity_i, &entity_j) {                
+            if let Some(displace) = are_colliding(&entity_i, &entity_j) {
                 if entity_i.mass.is_anchored() && entity_j.mass.is_anchored() {
                     continue;
                 }

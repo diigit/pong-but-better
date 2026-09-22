@@ -1,28 +1,37 @@
 mod collisions;
-mod movement;
 mod extended_entities;
+mod movement;
 mod shapes;
 mod triangulation;
 mod utils;
 
 use hecs::World;
-use web_sys::js_sys::{Null, Undefined};
 use std::{
-    sync::mpsc::{self, Receiver},
-    time::Instant,
+    cell::{Cell, RefCell},
+    rc::Rc,
+    sync::{
+        Mutex, RwLock,
+        mpsc::{self, Receiver},
+    },
 };
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_test::console_log;
+use wasm_bindgen_test::{__rt::worker, console_log};
+use web_sys::{
+    DedicatedWorkerGlobalScope, Worker,
+    js_sys::{self, Undefined},
+};
 
 use crate::triangulation::TriangulationSystem;
 
 #[wasm_bindgen]
+#[derive(Clone)]
 pub struct CanvasSize {
     x: f32,
     y: f32,
 }
 
 #[wasm_bindgen]
+#[derive(Clone)]
 pub struct BallSpawnArgs {
     count: usize,
     x: f32,
@@ -30,6 +39,7 @@ pub struct BallSpawnArgs {
 }
 
 #[wasm_bindgen]
+#[derive(Clone)]
 pub enum Command {
     SetPaused(bool),
     SetPlayerVelocity(f32),
@@ -42,29 +52,44 @@ pub enum Command {
 }
 
 #[wasm_bindgen]
+#[derive(Default, Clone, Copy)]
+pub struct VertexBufferPtr {
+    pub ptr: *const f32,
+    pub len: usize,
+}
+
+#[wasm_bindgen]
 pub struct GameController {
-    transmitter: mpsc::Sender<Command>,
+    worker: Worker,
 }
 
 #[wasm_bindgen]
 impl GameController {
-    pub fn new() -> Self {
-        let (tx, rx) = mpsc::channel::<Command>();
-
-        Self::run_rx(rx);
-
-        Self { transmitter: tx }
+    pub fn new(worker: Worker) -> Self {
+        Self { worker }
     }
 
-    pub fn send_command(&self, command: Command) {
-        self.transmitter.send(command).unwrap();
-    }
+    fn run_within_worker() {
+        let global = js_sys::global().unchecked_into::<DedicatedWorkerGlobalScope>();
 
-    fn run_rx(rx: Receiver<Command>) {
+        let command_buf_ref: Rc<RefCell<Vec<Command>>> = Rc::new(RefCell::new(Vec::new()));
+
+        let msg_handler_ref = Rc::clone(&command_buf_ref);
+        let message_handler: Closure<dyn FnMut(Command)> = Closure::new(move |cmd| {
+            let mut command_buf = msg_handler_ref.borrow_mut();
+            command_buf.push(cmd);
+        });
+
+        global.set_onmessage(Some(message_handler.as_ref().unchecked_ref()));
+
+        message_handler.forget();
+
         let mut world = World::new();
 
-        let performance = web_sys::window().unwrap().performance().unwrap();
-        let mut triangulation_sys = TriangulationSystem::default();
+        let performance = global
+            .performance()
+            .expect("Unabled to find performance object in worker.");
+        let mut triangulation_sys = TriangulationSystem::new();
 
         let _ = extended_entities::PlayerPaddleSystem::create(&mut world);
         let _ = extended_entities::BotPaddleSystem::create(&mut world);
@@ -73,11 +98,13 @@ impl GameController {
         let mut time_last = performance.now();
         loop {
             let time_now = performance.now();
-            let time_delta = (time_now - time_last) as f32;
+            let time_delta = ((time_now - time_last) / 1000.0) as f32;
             time_last = time_now;
 
-            for cmd in rx.try_iter() {
-                extended_entities::execute_command(&mut world, cmd);
+            if let Ok(command_buf) = command_buf_ref.try_borrow() {
+                for cmd in command_buf.iter() {
+                    extended_entities::execute_command(&mut world, cmd);
+                }
             }
 
             movement::run_movement(&mut world, time_delta);
@@ -96,4 +123,11 @@ extern "C" {
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {
     Ok(())
+}
+
+#[wasm_bindgen]
+pub fn setup_game_controller(worker: Worker) -> GameController {
+    let game_controller = GameController::new(worker);
+
+    game_controller
 }

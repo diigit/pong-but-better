@@ -9,35 +9,28 @@ use lyon::{
 };
 
 use crate::{
-    movement::{Bounds, Position},
-    set_vertex_buffer,
-    shapes::Shape,
+    VertexBufferPtr, movement::{Bounds, Position}, shapes::Shape,
 };
 
 #[derive(Debug)]
 pub struct Visible;
 
-#[derive(Default)]
 pub struct TriangulationSystem {
-    last: usize,
-    buffers: [VertexBuffers<Point, u16>; 2],
+    buffer: VertexBuffers<Point, u16>,
 }
 
 impl TriangulationSystem {
     pub fn new() -> Self {
         Self {
-            last: 0,
-            buffers: [VertexBuffers::new(), VertexBuffers::new()],
+            buffer: VertexBuffers::new(),
         }
     }
 
     pub fn run_triangulation(&mut self, world: &mut World) {
-        let current_index = 1 - self.last;
-        let buffer=  &mut self.buffers[current_index];
+        let buffer = &mut self.buffer;
         buffer.clear();
 
-        let mut geo_builder: BuffersBuilder<'_, Point, u16, Positions> =
-            simple_builder(buffer);
+        let mut geo_builder: BuffersBuilder<'_, Point, u16, Positions> = simple_builder(buffer);
         let mut tessellator: FillTessellator = FillTessellator::new();
         let fill_opts: FillOptions = FillOptions::tolerance(0.1);
         let mut builder: NoAttributes<FillBuilder<'_>> =
@@ -48,12 +41,12 @@ impl TriangulationSystem {
         for (shape, position, bounds, _) in query {
             shape.write_vertices(&mut builder, **position, **bounds);
         }
+    }
 
-        if let Ok(()) = builder.build() {
-            set_vertex_buffer(
-                buffer.vertices.as_ptr() as *const f32,
-                buffer.vertices.len(),
-            );
+    pub fn get_buffer_ptr(&self) -> VertexBufferPtr {
+        VertexBufferPtr {
+            ptr: self.buffer.vertices.as_ptr() as *const f32,
+            len: self.buffer.vertices.len(),
         }
     }
 }

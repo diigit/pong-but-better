@@ -8,17 +8,14 @@ import '@fontsource/poppins';
 import { GameState } from "./game-state.ts";
 import { GameController } from "../pkg/pong_but_better"
 
+let worker = new Worker("./www/gameplay.ts", { type: "module" });
+let game_controller = GameController.new();
+
+worker.postMessage(game_controller);
+
 const renderer = new PongRenderer();
 const collider = new AABBCollider();
 const gameState = new GameState(renderer, collider);
-
-async function run_game_controller() {
-  let game_controller = GameController.new();
-}
-
-run_game_controller().catch((e) => {
-  console.error(e);
-});
 
 export const dependencyContext = createContext({ renderer, gameState });
 
@@ -29,4 +26,3 @@ createRoot(document.getElementById('root')!).render(
     </dependencyContext.Provider>
   </StrictMode>,
 )
-
