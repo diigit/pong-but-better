@@ -90,7 +90,7 @@ impl GameController {
 
 #[wasm_bindgen]
 extern "C" {
-    fn send_vertices(ptr: *const f32, len: usize);
+    fn set_vertex_buffer(ptr: *const f32, len: usize);
 }
 
 #[wasm_bindgen(start)]

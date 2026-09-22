@@ -1,4 +1,3 @@
-use deref::DerefMut;
 use hecs::World;
 use lyon::{
     math::Point,
@@ -11,27 +10,34 @@ use lyon::{
 
 use crate::{
     movement::{Bounds, Position},
-    send_vertices,
+    set_vertex_buffer,
     shapes::Shape,
 };
 
 #[derive(Debug)]
 pub struct Visible;
 
-#[derive(Debug, DerefMut, Default)]
-pub struct Vertices(#[auto_ref] VertexBuffers<Point, u16>);
-
 #[derive(Default)]
 pub struct TriangulationSystem {
-    buffers: Vertices,
+    last: usize,
+    buffers: [VertexBuffers<Point, u16>; 2],
 }
 
 impl TriangulationSystem {
+    pub fn new() -> Self {
+        Self {
+            last: 0,
+            buffers: [VertexBuffers::new(), VertexBuffers::new()],
+        }
+    }
+
     pub fn run_triangulation(&mut self, world: &mut World) {
-        self.buffers.clear();
+        let current_index = 1 - self.last;
+        let buffer=  &mut self.buffers[current_index];
+        buffer.clear();
 
         let mut geo_builder: BuffersBuilder<'_, Point, u16, Positions> =
-            simple_builder(&mut self.buffers);
+            simple_builder(buffer);
         let mut tessellator: FillTessellator = FillTessellator::new();
         let fill_opts: FillOptions = FillOptions::tolerance(0.1);
         let mut builder: NoAttributes<FillBuilder<'_>> =
@@ -44,9 +50,9 @@ impl TriangulationSystem {
         }
 
         if let Ok(()) = builder.build() {
-            send_vertices(
-                self.buffers.vertices.as_ptr() as *const f32,
-                self.buffers.vertices.len(),
+            set_vertex_buffer(
+                buffer.vertices.as_ptr() as *const f32,
+                buffer.vertices.len(),
             );
         }
     }
