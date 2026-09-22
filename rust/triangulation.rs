@@ -1,4 +1,4 @@
-use deref::{DerefMut};
+use deref::DerefMut;
 use hecs::World;
 use lyon::{
     math::Point,

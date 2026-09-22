@@ -9,15 +9,18 @@ pub type Precision = f32;
 #[derive(Debug)]
 pub struct CollidingWith(pub Entity);
 
-#[derive(Debug)]
-pub struct Anchored;
-
 #[derive(Debug, Deref, Clone, Copy)]
 pub struct Mass(#[auto_ref] pub Precision);
 
 impl Default for Mass {
     fn default() -> Self {
         Self(1.0)
+    }
+}
+
+impl Mass {
+    pub fn is_anchored(&self) -> bool {
+        self.0 == f32::MAX
     }
 }
 

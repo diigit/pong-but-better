@@ -1,11 +1,12 @@
 mod collisions;
 mod movement;
-mod objects;
+mod extended_entities;
 mod shapes;
 mod triangulation;
 mod utils;
 
 use hecs::World;
+use web_sys::js_sys::{Null, Undefined};
 use std::{
     sync::mpsc::{self, Receiver},
     time::Instant,
@@ -22,10 +23,22 @@ pub struct CanvasSize {
 }
 
 #[wasm_bindgen]
+pub struct BallSpawnArgs {
+    count: usize,
+    x: f32,
+    y: f32,
+}
+
+#[wasm_bindgen]
 pub enum Command {
     SetPaused(bool),
     SetPlayerVelocity(f32),
+    SetBotMaxSpeed(f32),
+    SetBotFutureSight(f32),
     SetCanvasSize(CanvasSize),
+    SpawnBall(BallSpawnArgs),
+    RemoveAllBalls(Undefined),
+    StartBalls(Undefined),
 }
 
 #[wasm_bindgen]
@@ -53,9 +66,9 @@ impl GameController {
         let performance = web_sys::window().unwrap().performance().unwrap();
         let mut triangulation_sys = TriangulationSystem::default();
 
-        let _ = objects::PlayerPaddleSystem::create(&mut world);
-        let _ = objects::BotPaddleSystem::create(&mut world);
-        let _ = objects::BallSystem::create(&mut world);
+        let _ = extended_entities::PlayerPaddleSystem::create(&mut world);
+        let _ = extended_entities::BotPaddleSystem::create(&mut world);
+        let _ = extended_entities::BallSystem::create(&mut world);
 
         let mut time_last = performance.now();
         loop {
@@ -64,12 +77,12 @@ impl GameController {
             time_last = time_now;
 
             for cmd in rx.try_iter() {
-                objects::execute_command(&mut world, cmd);
+                extended_entities::execute_command(&mut world, cmd);
             }
 
             movement::run_movement(&mut world, time_delta);
             collisions::run_collisions(&mut world);
-            objects::run_objects(&mut world, time_delta);
+            extended_entities::run_objects(&mut world, time_delta);
             triangulation_sys.run_triangulation(&mut world);
         }
     }

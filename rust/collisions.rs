@@ -1,17 +1,21 @@
 extern crate nalgebra as na;
 
-use deref::DerefMut;
-use hecs::{Bundle, Entity, World};
+use hecs::{Entity, World};
 use nalgebra::Vector2;
 
 use crate::movement::*;
 
-#[derive(DerefMut)]
-pub struct Anchored(#[auto_ref] bool);
+pub struct IgnoreCollisions;
 
-#[derive(Bundle)]
-pub struct CollidableBundle(Entity, Position, Velocity, Bounds, Mass, Anchored);
-
+pub fn spawn_collidable(
+    world: &mut World,
+    position: Position,
+    velocity: Velocity,
+    bounds: Bounds,
+    mass: Mass,
+) -> Entity {
+    world.spawn((position, velocity, bounds, mass))
+}
 
 pub struct CollidableObject<'a> {
     pub entity_id: Entity,
@@ -19,7 +23,6 @@ pub struct CollidableObject<'a> {
     pub velocity: &'a mut Velocity,
     pub bounds: &'a Bounds,
     pub mass: &'a Mass,
-    pub anchored: &'a Anchored,
 }
 
 impl<'a>
@@ -29,7 +32,6 @@ impl<'a>
         &'a mut Velocity,
         &'a Bounds,
         &'a Mass,
-        &'a Anchored,
     )> for CollidableObject<'a>
 {
     fn from(
@@ -39,7 +41,6 @@ impl<'a>
             &'a mut Velocity,
             &'a Bounds,
             &'a Mass,
-            &'a Anchored,
         ),
     ) -> Self {
         Self {
@@ -48,7 +49,6 @@ impl<'a>
             velocity: t.2,
             bounds: t.3,
             mass: t.4,
-            anchored: t.5,
         }
     }
 }
@@ -155,22 +155,28 @@ pub fn collide(
 
 pub fn run_collisions(world: &mut World) {
     let mut query_iter = world
-        .query_mut::<(Entity, &mut Position, &mut Velocity, &Bounds, &Mass, &Anchored)>()
+        .query_mut::<(
+            Entity,
+            &mut Position,
+            &mut Velocity,
+            &Bounds,
+            &Mass,
+        )>().without::<&IgnoreCollisions>()
         .into_iter()
         .map(CollidableObject::from);
 
-	// TODO: Collision Event
+    // TODO: Collision Event
 
     while let Some(mut entity_i) = query_iter.next() {
         for mut entity_j in &mut query_iter {
-            if let Some(displace) = are_colliding(&entity_i, &entity_j) {
-                if entity_i.anchored.0 && entity_j.anchored.0 {
+            if let Some(displace) = are_colliding(&entity_i, &entity_j) {                
+                if entity_i.mass.is_anchored() && entity_j.mass.is_anchored() {
                     continue;
                 }
 
-                if entity_i.anchored.0 {
+                if entity_i.mass.is_anchored() {
                     collide_static(displace.negative(), &mut entity_j);
-                } else if entity_j.anchored.0 {
+                } else if entity_j.mass.is_anchored() {
                     collide_static(displace, &mut entity_i);
                 }
 

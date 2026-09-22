@@ -1,6 +1,6 @@
 use lyon::{
     geom::euclid::Box2D,
-    path::{builder::NoAttributes, Winding},
+    path::{Winding, builder::NoAttributes},
     tessellation::FillBuilder,
 };
 use nalgebra::{Point2, Vector2};
