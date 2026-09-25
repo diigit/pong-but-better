@@ -7,7 +7,7 @@ use core::f32;
 use hecs::{CommandBuffer, Entity, World};
 use nalgebra::{point, vector};
 
-use crate::{Command, collisions::*, movement::*};
+use crate::{Command, collisions::*, movement::*, shapes::Shape};
 
 const PADDLE_RELATIVE_SIZE_X: Precision = 0.1;
 const PADDLE_RELATIVE_SIZE_Y: Precision = 0.3;
@@ -196,6 +196,7 @@ impl BallSystem {
                         Acceleration::default(),
                         Mass(f32::MAX),
                         Bounds(vector![BALL_SIZE, BALL_SIZE]),
+                        Shape::AxisAlignedBox,
                         IgnoreCollisions,
                     )
                 });

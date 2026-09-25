@@ -1,10 +1,4 @@
-import { GameController } from "../pkg/pong_but_better";
+import { CanvasSize, GameController } from "../pkg/pong_but_better";
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "./constants";
 
-async function setupGameplay() {
-	self.onmessage = async event => {
-		console.log(event);	
-		event.data.run();
-	}
-}
-
-setupGameplay().catch(e => console.error(e));
+GameController.run_within_worker(CanvasSize.new(CANVAS_WIDTH, CANVAS_HEIGHT));

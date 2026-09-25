@@ -1,4 +1,4 @@
-import { GameController } from "../pkg/pong_but_better";
+import { VertexBufferPtr } from "../pkg/pong_but_better";
 import { memory } from "../pkg/pong_but_better_bg.wasm";
 import { GameObject } from "./game-objects";
 
@@ -11,6 +11,8 @@ let device = await gpuAdapter.requestDevice();
 if (!device) throw Error("Unable to retrieve GPU Device.");
 
 class GpuHandler {
+	public vertexBufferPtr?: VertexBufferPtr;
+
 	constructor(canvas: HTMLCanvasElement) {
 		const canvasFormat = window.navigator.gpu.getPreferredCanvasFormat();
 
@@ -102,9 +104,19 @@ class GpuHandler {
 		}
 
 		device.queue.writeBuffer(this.vertexBuffer, 0, triangles);
+
+		console.log(triangles.length);
 	}
 
 	render() {
+		if (!this.vertexBufferPtr) return;
+
+		this.writeTriangles(new Float32Array(
+			memory.buffer, 
+			this.vertexBufferPtr.ptr, 
+			this.vertexBufferPtr.len
+		));
+
 		const encoder = device.createCommandEncoder();
 
 		const renderPass = encoder.beginRenderPass({
@@ -135,7 +147,7 @@ class GpuHandler {
 	private numVertices: number = 0;
 }
 
-export class PongRenderer {
+export class PongRenderer {	
 	//private game_controller: GameController
 	constructor() {
 		this.gpu = window.navigator.gpu;
@@ -155,6 +167,7 @@ export class PongRenderer {
 
 		this.canvas = canvas;
 		this.gpuHandler = new GpuHandler(canvas);
+		this.gpuHandler.vertexBufferPtr = this.vertexBufferPtr;
 
 		const step: FrameRequestCallback = () => {
 			if (this.gpuHandler === undefined) return;
@@ -166,10 +179,6 @@ export class PongRenderer {
 		}
 
 		this.renderLoopId = window.requestAnimationFrame(step);
-	}
-
-	setVertices(vertices: Float32Array) {
-		this.gpuHandler?.writeTriangles(vertices);
 	}
 	
 	updateTriangles() {
@@ -200,10 +209,18 @@ export class PongRenderer {
 		this.objects.delete(object);
 	}
 
+	setVertexBufferPtr(vertexBufferPtr: VertexBufferPtr) {
+		console.log(vertexBufferPtr);
+		this.vertexBufferPtr = vertexBufferPtr;
+		if (this.gpuHandler) 
+			this.gpuHandler.vertexBufferPtr = vertexBufferPtr;
+	}
+
 	private objects = new Set<GameObject>;
 	private canvas: HTMLCanvasElement | undefined;
 	private gpu: GPU;
 	private renderLoopId = 0;
 
 	private gpuHandler: GpuHandler | undefined;
+	private vertexBufferPtr?: VertexBufferPtr;
 }

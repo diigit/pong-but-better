@@ -6,28 +6,27 @@ mod triangulation;
 mod utils;
 
 use hecs::World;
-use std::{
-    cell::{Cell, RefCell},
-    rc::Rc,
-    sync::{
-        Mutex, RwLock,
-        mpsc::{self, Receiver},
-    },
-};
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_test::{__rt::worker, console_log};
 use web_sys::{
     DedicatedWorkerGlobalScope, Worker,
     js_sys::{self, Undefined},
 };
 
-use crate::triangulation::TriangulationSystem;
+use crate::{movement::Precision, triangulation::TriangulationSystem};
 
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct CanvasSize {
     x: f32,
     y: f32,
+}
+
+#[wasm_bindgen]
+impl CanvasSize {
+    pub fn new(x: Precision, y: Precision) -> Self {
+        Self { x, y }
+    }
 }
 
 #[wasm_bindgen]
@@ -69,7 +68,7 @@ impl GameController {
         Self { worker }
     }
 
-    fn run_within_worker() {
+    pub fn run_within_worker(canvas_size: CanvasSize) {
         let global = js_sys::global().unchecked_into::<DedicatedWorkerGlobalScope>();
 
         let command_buf_ref: Rc<RefCell<Vec<Command>>> = Rc::new(RefCell::new(Vec::new()));
@@ -89,11 +88,17 @@ impl GameController {
         let performance = global
             .performance()
             .expect("Unabled to find performance object in worker.");
-        let mut triangulation_sys = TriangulationSystem::new();
+
+        let mut triangulation_sys = TriangulationSystem::new(canvas_size);
+        let mut geometry_buf = triangulation_sys.get_buffer_ptr();
+
+        global.post_message(&geometry_buf.into()).unwrap();
 
         let _ = extended_entities::PlayerPaddleSystem::create(&mut world);
         let _ = extended_entities::BotPaddleSystem::create(&mut world);
         let _ = extended_entities::BallSystem::create(&mut world);
+
+        let mut frames_since_last_render = 0;
 
         let mut time_last = performance.now();
         loop {
@@ -110,7 +115,17 @@ impl GameController {
             movement::run_movement(&mut world, time_delta);
             collisions::run_collisions(&mut world);
             extended_entities::run_objects(&mut world, time_delta);
-            triangulation_sys.run_triangulation(&mut world);
+
+            frames_since_last_render += 1;
+            if frames_since_last_render == 3000 {
+                frames_since_last_render = 0;
+                triangulation_sys.run_triangulation(&mut world);
+
+                if geometry_buf.ptr != triangulation_sys.get_buffer_ptr().ptr {
+                    geometry_buf = triangulation_sys.get_buffer_ptr();
+                    global.post_message(&geometry_buf.into()).unwrap();
+                }
+            }
         }
     }
 }

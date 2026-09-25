@@ -2,6 +2,7 @@ extern crate nalgebra as na;
 
 use hecs::{Entity, World};
 use nalgebra::Vector2;
+use wasm_bindgen_test::console_log;
 
 use crate::{
     movement::*,
