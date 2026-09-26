@@ -198,6 +198,7 @@ impl BallSystem {
                         Bounds(vector![BALL_SIZE, BALL_SIZE]),
                         Shape::AxisAlignedBox,
                         IgnoreCollisions,
+                        ExtendedEntityType::Ball,
                     )
                 });
 

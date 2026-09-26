@@ -1,13 +1,14 @@
 extern crate nalgebra as na;
 
-use hecs::{Entity, World};
-use nalgebra::Vector2;
-use wasm_bindgen_test::console_log;
+use std::collections::HashSet;
 
-use crate::{
-    movement::*,
-    shapes::Shape,
-};
+use hecs::{CommandBuffer, Entity, World};
+use nalgebra::Vector2;
+
+use crate::{movement::*, shapes::Shape};
+
+#[derive(Debug)]
+pub struct CollidingWith(pub Entity);
 
 pub struct IgnoreCollisions;
 
@@ -166,6 +167,8 @@ pub fn run_collisions(world: &mut World) {
 
     // TODO: Collision Event
 
+    let mut colliding_pairs = HashSet::new();
+
     while let Some(mut entity_i) = query_iter.next() {
         for mut entity_j in &mut query_iter {
             if let Some(displace) = are_colliding(&entity_i, &entity_j) {
@@ -180,17 +183,31 @@ pub fn run_collisions(world: &mut World) {
                 }
 
                 collide(displace, &mut entity_i, &mut entity_j);
+
+                colliding_pairs.insert((entity_i.entity_id, entity_j.entity_id));
             }
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+    let mut world_command_buffer = CommandBuffer::new();
 
-    #[test]
-    fn collision_test() {
-        // TODO
+    for (entity_id, colliding_with) in world.query_mut::<(Entity, &CollidingWith)>() {
+        let tuple = &(entity_id, colliding_with.0);
+        let reverse = &(colliding_with.0, entity_id);
+
+        if colliding_pairs.contains(tuple) {
+            colliding_pairs.remove(tuple);
+        } else if colliding_pairs.contains(reverse) {
+            colliding_pairs.remove(reverse);
+        } else {
+            world_command_buffer.remove_one::<CollidingWith>(entity_id);
+        }
     }
+    
+    colliding_pairs.iter().for_each(|(entity_i, entity_j)| {
+        world_command_buffer.insert_one(*entity_i, CollidingWith(*entity_j));
+        world_command_buffer.insert_one(*entity_j, CollidingWith(*entity_i));
+    });
+
+    world_command_buffer.run_on(world);
 }

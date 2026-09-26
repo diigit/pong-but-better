@@ -1,5 +1,5 @@
 use hecs::World;
-use std::{cell::RefCell, default, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 use web_sys::{
     DedicatedWorkerGlobalScope,
@@ -23,6 +23,7 @@ pub fn run_within_worker(buffer: SharedArrayBuffer, canvas_size: CanvasSize) {
         .expect("Unabled to find performance object in worker.");
 
     let command_buf_ref: Rc<RefCell<Vec<Command>>> = Rc::new(RefCell::new(Vec::new()));
+    command_buf_ref.borrow_mut().push(Command::SetCanvasSize(canvas_size));
 
     {
         let command_buf_ref = Rc::clone(&command_buf_ref);

@@ -1,13 +1,10 @@
 extern crate nalgebra as na;
 
 use deref::{Deref, DerefMut};
-use hecs::{Entity, World};
+use hecs::World;
 use na::{Point2, Vector2};
 
 pub type Precision = f32;
-
-#[derive(Debug)]
-pub struct CollidingWith(pub Entity);
 
 #[derive(Debug, Deref, Clone, Copy)]
 pub struct Mass(#[auto_ref] pub Precision);
@@ -54,15 +51,5 @@ pub fn run_movement(world: &mut World, time_delta: Precision) {
     {
         e_vel.0 += e_accel.0 * time_delta;
         e_pos.0 += e_vel.0 * time_delta;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn movement_test() {
-        // TODO
     }
 }

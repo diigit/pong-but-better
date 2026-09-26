@@ -10,5 +10,7 @@ mod gameplay;
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {
+    utils::set_panic_hook();
+    
     Ok(())
 }

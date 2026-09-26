@@ -1,12 +1,9 @@
 use hecs::World;
 use lyon::geom::euclid::UnknownUnit;
-use lyon::{geom::euclid::Point2D, math::Point};
+use lyon::geom::euclid::Point2D;
 use lyon::tessellation::*;
 use nalgebra::{Vector2, point, vector};
-use wasm_bindgen_test::console_log;
 use web_sys::js_sys::{Float32Array, SharedArrayBuffer};
-
-const MAX_VERTEX_COUNT: u32 = 256;
 
 use crate::{
     movement::{Bounds, Position, Precision},

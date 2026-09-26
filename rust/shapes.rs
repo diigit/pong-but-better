@@ -1,10 +1,6 @@
 use lyon::{
     geom::euclid::Box2D,
-    math::Point,
-    path::{Winding, builder::NoAttributes},
-    tessellation::{
-        BuffersBuilder, FillBuilder, FillOptions, FillTessellator, geometry_builder::Positions,
-    },
+    tessellation::{FillOptions, FillTessellator},
 };
 use nalgebra::{Point2, Vector2};
 
@@ -26,14 +22,16 @@ impl Shape {
     ) {
         match self {
             Self::AxisAlignedBox => {
-                fill_tess.tessellate_rectangle(
-                    &Box2D {
-                        min: lyon::math::point(position.x, position.y),
-                        max: lyon::math::point(position.x + bounds.x, position.y + bounds.y),
-                    },
-                    opts,
-                    builder,
-                );
+                fill_tess
+                    .tessellate_rectangle(
+                        &Box2D {
+                            min: lyon::math::point(position.x, position.y),
+                            max: lyon::math::point(position.x + bounds.x, position.y + bounds.y),
+                        },
+                        opts,
+                        builder,
+                    )
+                    .unwrap();
             }
         }
     }
