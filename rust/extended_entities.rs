@@ -28,7 +28,7 @@ impl PlayerPaddleSystem {
                 CANVAS_PADDLE_PADDING,
                 CANVAS_HEIGHT / 2.0 - PADDLE_SIZE_Y / 2.0,
             ]),
-            Velocity(vector![0.0, 100.0]),
+            Velocity::default(),
             PADDLE_BOUNDS,
             Mass(f32::MAX),
         );
@@ -66,7 +66,7 @@ impl BotPaddleSystem {
         let entity = spawn_collidable(
             world,
             Position(point![
-                CANVAS_WIDTH - CANVAS_PADDLE_PADDING - PADDLE_SIZE_X / 2.0,
+                CANVAS_WIDTH - CANVAS_PADDLE_PADDING - PADDLE_SIZE_X,
                 CANVAS_HEIGHT / 2.0 - PADDLE_SIZE_Y / 2.0,
             ]),
             Velocity::default(),
