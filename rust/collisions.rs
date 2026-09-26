@@ -16,10 +16,11 @@ pub fn spawn_collidable(
     world: &mut World,
     position: Position,
     velocity: Velocity,
+    acceleration: Acceleration,
     bounds: Bounds,
     mass: Mass,
 ) -> Entity {
-    world.spawn((position, velocity, bounds, mass, Shape::AxisAlignedBox))
+    world.spawn((position, velocity, acceleration, bounds, mass, Shape::AxisAlignedBox))
 }
 
 pub struct CollidableObject<'a> {

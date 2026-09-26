@@ -28,7 +28,8 @@ impl PlayerPaddleSystem {
                 CANVAS_PADDLE_PADDING,
                 CANVAS_HEIGHT / 2.0 - PADDLE_SIZE_Y / 2.0,
             ]),
-            Velocity::default(),
+            Velocity(vector![0.0, 100.0]),
+            Acceleration::default(),
             PADDLE_BOUNDS,
             Mass(f32::MAX),
         );
@@ -70,6 +71,7 @@ impl BotPaddleSystem {
                 CANVAS_HEIGHT / 2.0 - PADDLE_SIZE_Y / 2.0,
             ]),
             Velocity::default(),
+            Acceleration::default(),
             PADDLE_BOUNDS,
             Mass(f32::MAX),
         );
