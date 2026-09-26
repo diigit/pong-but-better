@@ -165,8 +165,6 @@ pub fn run_collisions(world: &mut World) {
         .into_iter()
         .map(CollidableObject::from);
 
-    // TODO: Collision Event
-
     let mut colliding_pairs = HashSet::new();
 
     while let Some(mut entity_i) = query_iter.next() {
@@ -203,7 +201,7 @@ pub fn run_collisions(world: &mut World) {
             world_command_buffer.remove_one::<CollidingWith>(entity_id);
         }
     }
-    
+
     colliding_pairs.iter().for_each(|(entity_i, entity_j)| {
         world_command_buffer.insert_one(*entity_i, CollidingWith(*entity_j));
         world_command_buffer.insert_one(*entity_j, CollidingWith(*entity_i));

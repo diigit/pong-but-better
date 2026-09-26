@@ -4,7 +4,7 @@ use lyon::{
 };
 use nalgebra::{Point2, Vector2};
 
-use crate::{movement::Precision, triangulation::LyonAdaptedArray};
+use crate::{movement::Precision, triangulation::SharedBuffer};
 
 #[derive(Debug)]
 pub enum Shape {
@@ -14,7 +14,7 @@ pub enum Shape {
 impl Shape {
     pub fn write_vertices(
         &self,
-        builder: &mut LyonAdaptedArray,
+        builder: &mut SharedBuffer,
         fill_tess: &mut FillTessellator,
         opts: &FillOptions,
         position: Point2<Precision>,

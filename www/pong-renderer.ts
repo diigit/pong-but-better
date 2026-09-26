@@ -1,6 +1,4 @@
-import { GameObject } from "./game-objects";
-
-const VERTEX_BUFFER_STARTING_LENGTH = 64; // 32 vertices
+import { MAX_VERTICES } from "./constants";
 
 let gpuAdapter = await window.navigator.gpu.requestAdapter();
 if (!gpuAdapter) throw Error("Unable to retrieve GPU Adapter.");
@@ -9,10 +7,11 @@ let device = await gpuAdapter.requestDevice();
 if (!device) throw Error("Unable to retrieve GPU Device.");
 
 class GpuHandler {
-	constructor(canvas: HTMLCanvasElement, shared_buffer: SharedArrayBuffer) {
+	constructor(canvas: HTMLCanvasElement, shared_vertex_buffer: SharedArrayBuffer, shared_index_buffer: SharedArrayBuffer) {
 		const canvasFormat = window.navigator.gpu.getPreferredCanvasFormat();
 
-		this.geometry = new Float32Array(shared_buffer);
+		this.vertices = new Float32Array(shared_vertex_buffer);
+		this.indices = new Uint16Array(shared_index_buffer);
 		this.context = canvas.getContext("webgpu") as GPUCanvasContext;
 
 		this.context.configure({
@@ -74,7 +73,12 @@ class GpuHandler {
 			}
 		});
 
-		this.vertexBuffer = this.createVertexBuffer(32 * VERTEX_BUFFER_STARTING_LENGTH);
+		this.vertexBuffer = this.createVertexBuffer(MAX_VERTICES * 2 * 32);
+		this.indexBuffer = device.createBuffer({
+			label: "Triangle index buffer",
+			size: MAX_VERTICES * 2 * 16,
+			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX,
+		})
 	}
 
 	createVertexBuffer(size: number): GPUBuffer {
@@ -85,26 +89,14 @@ class GpuHandler {
 		})
 	}
 
-	resizeVertexBuffer(newMinSize: number) {
-		const currentSize = this.vertexBuffer.size;
-		const mul = Math.pow(2, Math.ceil(Math.log2(newMinSize / currentSize)));
-
-		this.vertexBuffer.destroy()
-		this.vertexBuffer = this.createVertexBuffer(currentSize * mul);
-	}
-
-	writeTriangles(triangles: Float32Array) {
-		this.numVertices = triangles.length / 2;
-		
-		if (this.vertexBuffer.size < triangles.byteLength) {
-			this.resizeVertexBuffer(triangles.byteLength);
-		}
-
-		device.queue.writeBuffer(this.vertexBuffer, 0, triangles);
+	updateBuffers() {		
+		device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices);
+		device.queue.writeBuffer(this.indexBuffer, 0, this.indices);
 	}
 
 	render() {
-		this.writeTriangles(this.geometry);
+		this.updateBuffers();
+
 		const encoder = device.createCommandEncoder();
 
 		const renderPass = encoder.beginRenderPass({
@@ -118,8 +110,9 @@ class GpuHandler {
 
 		renderPass.setPipeline(this.renderPipeline);
 		renderPass.setVertexBuffer(0, this.vertexBuffer);
-		renderPass.draw(this.numVertices, 1, 0, 0);
-
+		renderPass.setIndexBuffer(this.indexBuffer, "uint16");
+		renderPass.draw(MAX_VERTICES, 1, 0, 0);
+		
 		renderPass.end();
 		device.queue.submit([encoder.finish()]);
 	}
@@ -129,15 +122,16 @@ class GpuHandler {
 	}
 
 	private vertexBuffer: GPUBuffer;
+	private indexBuffer: GPUBuffer;
 	private shaderModule: GPUShaderModule;
 	private renderPipeline: GPURenderPipeline;
 	private context: GPUCanvasContext;
-	private numVertices: number = 0;
-	private geometry: Float32Array;
+	private vertices: Float32Array;
+	private indices: Uint16Array;
 }
 
 export class PongRenderer {	
-	constructor(private shared_buffer: SharedArrayBuffer) {
+	constructor(private vertex_buffer: SharedArrayBuffer, private index_buffer: SharedArrayBuffer) {
 		this.gpu = window.navigator.gpu;
 		if (this.gpu === undefined) Error("WebGPU is not supported by this browser.");
 	}
@@ -154,7 +148,7 @@ export class PongRenderer {
 		if (canvas === this.canvas as Node) return;
 
 		this.canvas = canvas;
-		this.gpuHandler = new GpuHandler(canvas, this.shared_buffer);
+		this.gpuHandler = new GpuHandler(canvas, this.vertex_buffer, this.index_buffer);
 
 		const step: FrameRequestCallback = () => {
 			if (this.gpuHandler === undefined) return;
@@ -167,36 +161,7 @@ export class PongRenderer {
 
 		this.renderLoopId = window.requestAnimationFrame(step);
 	}
-	
-	updateTriangles() {
-		let bufferLength = 0;
 
-		// get total amount of vertices that will be added to buffer
-		this.objects.forEach((obj) => {
-			bufferLength += obj.shapeDescriptor.vertexCount;
-		});
-
-		let vertexArray = new Float32Array(bufferLength * 2);
-
-		// calculate triangles and write to vertex array
-		let vertexOffset = 0;
-		this.objects.forEach((obj) => {
-			obj.shapeDescriptor.writeTriangles(vertexArray, vertexOffset);
-			vertexOffset += obj.shapeDescriptor.vertexCount * 2;
-		});
-
-		this.gpuHandler?.writeTriangles(vertexArray);
-	}
-
-	renderGameObject(object: GameObject) {
-		this.objects.add(object);
-	}
-
-	unrenderGameObject(object: GameObject) {
-		this.objects.delete(object);
-	}
-
-	private objects = new Set<GameObject>;
 	private canvas: HTMLCanvasElement | undefined;
 	private gpu: GPU;
 	private renderLoopId = 0;

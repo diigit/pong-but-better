@@ -35,15 +35,15 @@ export class GameState {
 	constructor(readonly renderer: PongRenderer, readonly collider: AABBCollider) {
 		this.ball = new GameObject(new PolygonDescriptor(rect(0, 0, DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE)));
 		this.ball.mass = BALL_MASS;
-		renderer.renderGameObject(this.ball);
+		//renderer.renderGameObject(this.ball);
 		collider.addCollider(this.ball);
 
 		this.paddleLeft = new PaddleController(point(-CANVAS_WIDTH/2 + (DEFAULT_PADDLE_WIDTH/2 + PADDLE_EDGE_MARGIN), 0));
-		renderer.renderGameObject(this.paddleLeft.paddle);
+		//renderer.renderGameObject(this.paddleLeft.paddle);
 		collider.addCollider(this.paddleLeft.paddle);
 		
 		this.paddleRight = new PaddleController(point(CANVAS_WIDTH/2 - (DEFAULT_PADDLE_WIDTH/2 + PADDLE_EDGE_MARGIN), 0));
-		renderer.renderGameObject(this.paddleRight.paddle);
+		//renderer.renderGameObject(this.paddleRight.paddle);
 		collider.addCollider(this.paddleRight.paddle);
 
 		this.barriers = [];
@@ -293,7 +293,7 @@ class ExplodeYourPCGamemode implements GamemodeHandler {
 			newBall.mass = randomBetween(.7, 2)
 
 			this.gameState.collider.addCollider(newBall);
-			this.gameState.renderer.renderGameObject(newBall);
+			//this.gameState.renderer.renderGameObject(newBall);
 
 			this.balls[i] = newBall;
 		}
@@ -312,7 +312,7 @@ class ExplodeYourPCGamemode implements GamemodeHandler {
 	onEnd(): void {
 		this.balls.forEach((ball) => {
 			this.gameState.collider.removeCollider(ball);
-			this.gameState.renderer.unrenderGameObject(ball);
+			//this.gameState.renderer.unrenderGameObject(ball);
 		});
 	}
 
@@ -349,7 +349,7 @@ class ManyBallsGamemode implements GamemodeHandler {
 			newBall.mass = randomBetween(.7, 2)
 
 			this.gameState.collider.addCollider(newBall);
-			this.gameState.renderer.renderGameObject(newBall);
+			//this.gameState.renderer.renderGameObject(newBall);
 
 			this.balls[i] = newBall;
 		}
@@ -368,7 +368,7 @@ class ManyBallsGamemode implements GamemodeHandler {
 	onEnd(): void {
 		this.balls.forEach((ball) => {
 			this.gameState.collider.removeCollider(ball);
-			this.gameState.renderer.unrenderGameObject(ball);
+			//this.gameState.renderer.unrenderGameObject(ball);
 		});
 	}
 
@@ -414,7 +414,7 @@ class ObstaclesGamemode implements GamemodeHandler {
 			newObstacle.superHeavy = true;
 
 			this.gameState.collider.addCollider(newObstacle);
-			this.gameState.renderer.renderGameObject(newObstacle);
+			//this.gameState.renderer.renderGameObject(newObstacle);
 
 			this.obstacles[index] = newObstacle;
 
@@ -425,7 +425,7 @@ class ObstaclesGamemode implements GamemodeHandler {
 	onEnd(): void {
 		this.obstacles.forEach((obstacle) => {
 			this.gameState.collider.removeCollider(obstacle);
-			this.gameState.renderer.unrenderGameObject(obstacle);
+			//this.gameState.renderer.unrenderGameObject(obstacle);
 		});
 
 		this.obstacles = new Array;

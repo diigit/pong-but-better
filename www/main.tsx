@@ -6,17 +6,19 @@ import { PongRenderer } from "./pong-renderer.ts";
 import { AABBCollider } from "./collisions.ts";
 import '@fontsource/poppins';
 import { GameState } from "./game-state.ts";
+import { MAX_VERTICES } from './constants.ts';
 
-let sharedArrayBuffer = new SharedArrayBuffer(256)
+let vertexBuffer = new SharedArrayBuffer(MAX_VERTICES * 2 * 32)
+let indexBuffer = new SharedArrayBuffer(MAX_VERTICES * 16)
 let worker = new Worker("./www/gameplay.ts", { type: "module" });
 
 worker.onmessage = event => {
   if (event.data === "ready") {
-    worker.postMessage(sharedArrayBuffer)
+    worker.postMessage([vertexBuffer, indexBuffer])
   } 
 }
 
-const renderer = new PongRenderer(sharedArrayBuffer);
+const renderer = new PongRenderer(vertexBuffer, indexBuffer);
 const collider = new AABBCollider();
 const gameState = new GameState(renderer, collider);
 

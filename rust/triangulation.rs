@@ -1,8 +1,9 @@
 use hecs::World;
-use lyon::geom::euclid::UnknownUnit;
 use lyon::geom::euclid::Point2D;
+use lyon::geom::euclid::UnknownUnit;
 use lyon::tessellation::*;
 use nalgebra::{Vector2, point, vector};
+use web_sys::js_sys::Uint16Array;
 use web_sys::js_sys::{Float32Array, SharedArrayBuffer};
 
 use crate::{
@@ -18,18 +19,23 @@ pub struct TriangulationSystem {
     fill_tess: FillTessellator,
     fill_opts: FillOptions,
     canvas_size: Vector2<Precision>,
-    exposed_array: LyonAdaptedArray,
+    exposed_array: SharedBuffer,
 }
 
 impl TriangulationSystem {
-    pub fn new(buffer: &SharedArrayBuffer, canvas_size: CanvasSize) -> Self {
-        let exposed_array = Float32Array::new(buffer);
-
+    pub fn new(
+        vertex_buffer: &SharedArrayBuffer,
+        index_buffer: &SharedArrayBuffer,
+        canvas_size: CanvasSize,
+    ) -> Self {
         Self {
             fill_tess: FillTessellator::new(),
             fill_opts: FillOptions::DEFAULT,
             canvas_size: vector![canvas_size.x, canvas_size.y],
-            exposed_array: LyonAdaptedArray::new(exposed_array),
+            exposed_array: SharedBuffer::new(
+                Float32Array::new(vertex_buffer),
+                Uint16Array::new(index_buffer),
+            ),
         }
     }
 
@@ -50,45 +56,66 @@ impl TriangulationSystem {
                 ],
                 vector![bounds.x / self.canvas_size.x, bounds.y / self.canvas_size.y],
             );
-        }   
+        }
     }
 }
 
 #[derive(Debug)]
-pub struct LyonAdaptedArray {
-    buf: Float32Array,
-    len: u32,
+pub struct SharedBuffer {
+    vertices: Float32Array,
+    indices: Uint16Array,
+    vertex_count: u16,
+    index_count: u16,
 }
 
-impl LyonAdaptedArray {
-    pub fn new(buf: Float32Array) -> Self {
+impl SharedBuffer {
+    pub fn new(vertices: Float32Array, indices: Uint16Array) -> Self {
         return Self {
-            buf,
-            len: 0,
-        }
+            vertices,
+            indices,
+            vertex_count: 0,
+            index_count: 0,
+        };
     }
 
     pub fn clear(&mut self) {
-        for index in 0..self.len {
-            self.buf.set_index(index, 0.0);
+        for index in 0..self.vertex_count * 2 {
+            self.vertices.set_index(index as u32, 0.0)
         }
-        self.len = 0;
+        self.vertex_count = 0;
+
+        for index in 0..self.index_count {
+            self.indices.set_index(index as u32, 0u16)
+        }
+        self.index_count = 0;
     }
 
-    pub fn push_point(&mut self, point: Point2D<Precision, UnknownUnit>) {
-        self.buf.set_index(self.len, point.x);
-        self.buf.set_index(self.len + 1, point.y);
-        self.len += 2;
+    pub fn push_point(&mut self, point: Point2D<Precision, UnknownUnit>) -> VertexId {
+        let id = self.vertex_count;
+        let index = (self.vertex_count * 2) as u32;
+        self.vertices.set_index(index, point.x);
+        self.vertices.set_index(index + 1, point.y);
+        self.vertex_count += 1;
+
+        VertexId(id as u32)
+    }
+
+    pub fn push_id(&mut self, id: VertexId) {
+        self.indices.set_index(self.index_count as u32, id.0 as u16);
+        self.index_count += 1;
     }
 }
 
-impl GeometryBuilder for LyonAdaptedArray {
-    fn add_triangle(&mut self, _: VertexId, _: VertexId, _: VertexId) {}
+impl GeometryBuilder for SharedBuffer {
+    fn add_triangle(&mut self, a: VertexId, b: VertexId, c: VertexId) {
+        self.push_id(a);
+        self.push_id(b);
+        self.push_id(c);
+    }
 }
 
-impl FillGeometryBuilder for LyonAdaptedArray {
+impl FillGeometryBuilder for SharedBuffer {
     fn add_fill_vertex(&mut self, vertex: FillVertex) -> Result<VertexId, GeometryBuilderError> {
-        self.push_point(vertex.position());
-        Ok(0u32.into())
+        Ok(self.push_point(vertex.position()))
     }
 }
