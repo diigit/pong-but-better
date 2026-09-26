@@ -1,5 +1,4 @@
-import { CanvasSize, run_within_worker } from "../pkg/pong_but_better";
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from "./constants";
+import { run_within_worker } from "../pkg/pong_but_better";
 
 onmessage = event => { 	
 	let [vertexBuffer, indexBuffer] = event.data;
@@ -7,7 +6,6 @@ onmessage = event => {
 	run_within_worker(
 		vertexBuffer, 
 		indexBuffer,
-		CanvasSize.new(CANVAS_WIDTH, CANVAS_HEIGHT),
 	);
 }
 

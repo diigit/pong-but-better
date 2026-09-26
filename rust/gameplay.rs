@@ -16,14 +16,13 @@ use crate::{
 const FRAMES_PER_STEP: usize = 25_000_000; // Arbitrary number just cus it runs too quick
 
 #[wasm_bindgen]
-pub fn run_within_worker(vertex_buffer: SharedArrayBuffer, index_buffer: SharedArrayBuffer, canvas_size: CanvasSize) {
+pub fn run_within_worker(vertex_buffer: SharedArrayBuffer, index_buffer: SharedArrayBuffer) {
     let global = js_sys::global().unchecked_into::<DedicatedWorkerGlobalScope>();
     let performance = global
         .performance()
         .expect("Unabled to find performance object in worker.");
 
     let command_buf_ref: Rc<RefCell<Vec<Command>>> = Rc::new(RefCell::new(Vec::new()));
-    command_buf_ref.borrow_mut().push(Command::SetCanvasSize(canvas_size));
 
     {
         let command_buf_ref = Rc::clone(&command_buf_ref);
@@ -39,7 +38,7 @@ pub fn run_within_worker(vertex_buffer: SharedArrayBuffer, index_buffer: SharedA
 
     let mut world = World::new();
 
-    let mut triangulation_sys = TriangulationSystem::new(&vertex_buffer, &index_buffer, canvas_size);
+    let mut triangulation_sys = TriangulationSystem::new(&vertex_buffer, &index_buffer);
 
     let _ = extended_entities::PlayerPaddleSystem::create(&mut world);
     let _ = extended_entities::BotPaddleSystem::create(&mut world);

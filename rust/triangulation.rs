@@ -2,14 +2,14 @@ use hecs::World;
 use lyon::geom::euclid::Point2D;
 use lyon::geom::euclid::UnknownUnit;
 use lyon::tessellation::*;
-use nalgebra::{Vector2, point, vector};
+use nalgebra::{point, vector};
 use web_sys::js_sys::Uint16Array;
 use web_sys::js_sys::{Float32Array, SharedArrayBuffer};
 
+use crate::constants;
 use crate::{
     movement::{Bounds, Position, Precision},
     shapes::Shape,
-    utils::CanvasSize,
 };
 
 #[derive(Debug)]
@@ -18,20 +18,14 @@ pub struct Invisible;
 pub struct TriangulationSystem {
     fill_tess: FillTessellator,
     fill_opts: FillOptions,
-    canvas_size: Vector2<Precision>,
     exposed_array: SharedBuffer,
 }
 
 impl TriangulationSystem {
-    pub fn new(
-        vertex_buffer: &SharedArrayBuffer,
-        index_buffer: &SharedArrayBuffer,
-        canvas_size: CanvasSize,
-    ) -> Self {
+    pub fn new(vertex_buffer: &SharedArrayBuffer, index_buffer: &SharedArrayBuffer) -> Self {
         Self {
             fill_tess: FillTessellator::new(),
             fill_opts: FillOptions::DEFAULT,
-            canvas_size: vector![canvas_size.x, canvas_size.y],
             exposed_array: SharedBuffer::new(
                 Float32Array::new(vertex_buffer),
                 Uint16Array::new(index_buffer),
@@ -51,10 +45,13 @@ impl TriangulationSystem {
                 &mut self.fill_tess,
                 &self.fill_opts,
                 point![
-                    position.x / self.canvas_size.x,
-                    position.y / self.canvas_size.y
+                    2.0 * position.x / constants::CANVAS_WIDTH - 1.0,
+                    2.0 * position.y / constants::CANVAS_HEIGHT - 1.0,
                 ],
-                vector![bounds.x / self.canvas_size.x, bounds.y / self.canvas_size.y],
+                vector![
+                    2.0 * bounds.x / constants::CANVAS_WIDTH,
+                    2.0 * bounds.y / constants::CANVAS_HEIGHT
+                ],
             );
         }
     }

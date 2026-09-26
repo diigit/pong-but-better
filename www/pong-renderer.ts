@@ -111,7 +111,7 @@ class GpuHandler {
 		renderPass.setPipeline(this.renderPipeline);
 		renderPass.setVertexBuffer(0, this.vertexBuffer);
 		renderPass.setIndexBuffer(this.indexBuffer, "uint16");
-		renderPass.draw(MAX_VERTICES, 1, 0, 0);
+		renderPass.drawIndexed(MAX_VERTICES, 1);
 		
 		renderPass.end();
 		device.queue.submit([encoder.finish()]);

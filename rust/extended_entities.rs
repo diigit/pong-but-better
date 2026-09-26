@@ -7,12 +7,9 @@ use core::f32;
 use hecs::{CommandBuffer, Entity, World};
 use nalgebra::{point, vector};
 
-use crate::{collisions::*, movement::*, shapes::Shape, utils::Command};
-
-const PADDLE_RELATIVE_SIZE_X: Precision = 0.1;
-const PADDLE_RELATIVE_SIZE_Y: Precision = 0.3;
-const CANVAS_PADDLE_PADDING: Precision = 10.0;
-const BALL_SIZE: Precision = 10.0;
+use crate::{
+    collisions::*, constants::{self, BALL_SIDE_LENGTH, CANVAS_HEIGHT, CANVAS_PADDLE_PADDING, CANVAS_WIDTH, PADDLE_SIZE_X, PADDLE_SIZE_Y}, movement::*, shapes::Shape, utils::Command,
+};
 
 pub enum ExtendedEntityType {
     PlayerPaddle,
@@ -20,14 +17,19 @@ pub enum ExtendedEntityType {
     Ball,
 }
 
+const PADDLE_BOUNDS: Bounds = Bounds(vector![constants::PADDLE_SIZE_X, constants::PADDLE_SIZE_Y]);
+
 pub struct PlayerPaddleSystem;
 impl PlayerPaddleSystem {
     pub fn create(world: &mut World) {
         let entity = spawn_collidable(
             world,
-            Position::default(),
+            Position(point![
+                CANVAS_PADDLE_PADDING,
+                CANVAS_HEIGHT / 2.0 - PADDLE_SIZE_Y / 2.0,
+            ]),
             Velocity::default(),
-            Bounds::default(),
+            PADDLE_BOUNDS,
             Mass(f32::MAX),
         );
 
@@ -38,24 +40,6 @@ impl PlayerPaddleSystem {
 
     pub fn exec_cmd(world: &mut World, command: &Command) {
         match command {
-            Command::SetCanvasSize(size) => {
-                for (position, bounds, entity_type) in
-                    world.query_mut::<(&mut Position, &mut Bounds, &ExtendedEntityType)>()
-                {
-                    if let ExtendedEntityType::PlayerPaddle = entity_type {
-                        let new_bounds = vector![
-                            size.x * PADDLE_RELATIVE_SIZE_X,
-                            size.y * PADDLE_RELATIVE_SIZE_Y
-                        ];
-                        let x_pos = CANVAS_PADDLE_PADDING;
-                        let y_pos = size.y / 2.0 - new_bounds.y / 2.0;
-
-                        *position = Position(point![x_pos, y_pos]);
-                        *bounds = Bounds(new_bounds);
-                    }
-                }
-            }
-
             Command::SetPlayerVelocity(new_velocity) => {
                 for (velocity, entity_type) in
                     world.query_mut::<(&mut Velocity, &ExtendedEntityType)>()
@@ -81,9 +65,12 @@ impl BotPaddleSystem {
     pub fn create(world: &mut World) {
         let entity = spawn_collidable(
             world,
-            Position::default(),
+            Position(point![
+                CANVAS_WIDTH - CANVAS_PADDLE_PADDING - PADDLE_SIZE_X / 2.0,
+                CANVAS_HEIGHT / 2.0 - PADDLE_SIZE_Y / 2.0,
+            ]),
             Velocity::default(),
-            Bounds::default(),
+            PADDLE_BOUNDS,
             Mass(f32::MAX),
         );
 
@@ -112,24 +99,6 @@ impl BotPaddleSystem {
                         } else if let Command::SetBotFutureSight(time) = command {
                             *future_sight = *time;
                         };
-                    }
-                }
-            }
-
-            Command::SetCanvasSize(size) => {
-                for (entity_type, position, bounds) in
-                    world.query_mut::<(&mut ExtendedEntityType, &mut Position, &mut Bounds)>()
-                {
-                    if let ExtendedEntityType::BotPaddle { .. } = entity_type {
-                        let new_bounds = vector![
-                            size.x * PADDLE_RELATIVE_SIZE_X,
-                            size.y * PADDLE_RELATIVE_SIZE_Y
-                        ];
-                        let x_pos = size.x - CANVAS_PADDLE_PADDING - new_bounds.x;
-                        let y_pos = size.y / 2.0 - new_bounds.y / 2.0;
-
-                        *position = Position(point![x_pos, y_pos]);
-                        *bounds = Bounds(new_bounds);
                     }
                 }
             }
@@ -195,7 +164,7 @@ impl BallSystem {
                         Velocity::default(),
                         Acceleration::default(),
                         Mass(f32::MAX),
-                        Bounds(vector![BALL_SIZE, BALL_SIZE]),
+                        Bounds(vector![BALL_SIDE_LENGTH, BALL_SIDE_LENGTH]),
                         Shape::AxisAlignedBox,
                         IgnoreCollisions,
                         ExtendedEntityType::Ball,

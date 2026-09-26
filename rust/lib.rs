@@ -7,6 +7,7 @@ mod shapes;
 mod triangulation;
 mod utils;
 mod gameplay;
+mod constants;
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {
