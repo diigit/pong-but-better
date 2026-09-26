@@ -44,7 +44,7 @@ pub struct Bounds(#[auto_ref] pub Vector2<Precision>);
 
 impl Default for Bounds {
     fn default() -> Self {
-        Self(Vector2::new(1.0, 1.0))
+        Self(Vector2::new(100.0, 100.0))
     }
 }
 

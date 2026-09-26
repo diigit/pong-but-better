@@ -7,7 +7,7 @@ use core::f32;
 use hecs::{CommandBuffer, Entity, World};
 use nalgebra::{point, vector};
 
-use crate::{Command, collisions::*, movement::*, shapes::Shape};
+use crate::{collisions::*, movement::*, shapes::Shape, utils::Command};
 
 const PADDLE_RELATIVE_SIZE_X: Precision = 0.1;
 const PADDLE_RELATIVE_SIZE_Y: Precision = 0.3;

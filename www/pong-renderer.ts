@@ -1,5 +1,3 @@
-import { VertexBufferPtr } from "../pkg/pong_but_better";
-import { memory } from "../pkg/pong_but_better_bg.wasm";
 import { GameObject } from "./game-objects";
 
 const VERTEX_BUFFER_STARTING_LENGTH = 64; // 32 vertices
@@ -11,11 +9,10 @@ let device = await gpuAdapter.requestDevice();
 if (!device) throw Error("Unable to retrieve GPU Device.");
 
 class GpuHandler {
-	public vertexBufferPtr?: VertexBufferPtr;
-
-	constructor(canvas: HTMLCanvasElement) {
+	constructor(canvas: HTMLCanvasElement, shared_buffer: SharedArrayBuffer) {
 		const canvasFormat = window.navigator.gpu.getPreferredCanvasFormat();
 
+		this.geometry = new Float32Array(shared_buffer);
 		this.context = canvas.getContext("webgpu") as GPUCanvasContext;
 
 		this.context.configure({
@@ -97,26 +94,17 @@ class GpuHandler {
 	}
 
 	writeTriangles(triangles: Float32Array) {
-		this.numVertices = triangles.byteLength / 8;
+		this.numVertices = triangles.length / 2;
 		
 		if (this.vertexBuffer.size < triangles.byteLength) {
 			this.resizeVertexBuffer(triangles.byteLength);
 		}
 
 		device.queue.writeBuffer(this.vertexBuffer, 0, triangles);
-
-		console.log(triangles.length);
 	}
 
 	render() {
-		if (!this.vertexBufferPtr) return;
-
-		this.writeTriangles(new Float32Array(
-			memory.buffer, 
-			this.vertexBufferPtr.ptr, 
-			this.vertexBufferPtr.len
-		));
-
+		this.writeTriangles(this.geometry);
 		const encoder = device.createCommandEncoder();
 
 		const renderPass = encoder.beginRenderPass({
@@ -145,11 +133,11 @@ class GpuHandler {
 	private renderPipeline: GPURenderPipeline;
 	private context: GPUCanvasContext;
 	private numVertices: number = 0;
+	private geometry: Float32Array;
 }
 
 export class PongRenderer {	
-	//private game_controller: GameController
-	constructor() {
+	constructor(private shared_buffer: SharedArrayBuffer) {
 		this.gpu = window.navigator.gpu;
 		if (this.gpu === undefined) Error("WebGPU is not supported by this browser.");
 	}
@@ -166,8 +154,7 @@ export class PongRenderer {
 		if (canvas === this.canvas as Node) return;
 
 		this.canvas = canvas;
-		this.gpuHandler = new GpuHandler(canvas);
-		this.gpuHandler.vertexBufferPtr = this.vertexBufferPtr;
+		this.gpuHandler = new GpuHandler(canvas, this.shared_buffer);
 
 		const step: FrameRequestCallback = () => {
 			if (this.gpuHandler === undefined) return;
@@ -209,18 +196,10 @@ export class PongRenderer {
 		this.objects.delete(object);
 	}
 
-	setVertexBufferPtr(vertexBufferPtr: VertexBufferPtr) {
-		console.log(vertexBufferPtr);
-		this.vertexBufferPtr = vertexBufferPtr;
-		if (this.gpuHandler) 
-			this.gpuHandler.vertexBufferPtr = vertexBufferPtr;
-	}
-
 	private objects = new Set<GameObject>;
 	private canvas: HTMLCanvasElement | undefined;
 	private gpu: GPU;
 	private renderLoopId = 0;
 
 	private gpuHandler: GpuHandler | undefined;
-	private vertexBufferPtr?: VertexBufferPtr;
 }

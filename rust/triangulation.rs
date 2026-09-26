@@ -1,76 +1,97 @@
-use std::ops::Div;
-
 use hecs::World;
-use lyon::{
-    math::Point,
-    path::builder::NoAttributes,
-    tessellation::{
-        BuffersBuilder, FillBuilder, FillOptions, FillTessellator, VertexBuffers,
-        geometry_builder::{Positions, simple_builder},
-    },
-};
+use lyon::geom::euclid::UnknownUnit;
+use lyon::{geom::euclid::Point2D, math::Point};
+use lyon::tessellation::*;
 use nalgebra::{Vector2, point, vector};
-use wasm_bindgen_test::{__rt::console_log, console_log};
+use wasm_bindgen_test::console_log;
+use web_sys::js_sys::{Float32Array, SharedArrayBuffer};
+
+const MAX_VERTEX_COUNT: u32 = 256;
 
 use crate::{
-    CanvasSize, VertexBufferPtr,
     movement::{Bounds, Position, Precision},
     shapes::Shape,
+    utils::CanvasSize,
 };
 
 #[derive(Debug)]
 pub struct Invisible;
 
 pub struct TriangulationSystem {
-    buffer: VertexBuffers<Point, u16>,
     fill_tess: FillTessellator,
     fill_opts: FillOptions,
     canvas_size: Vector2<Precision>,
+    exposed_array: LyonAdaptedArray,
 }
 
 impl TriangulationSystem {
-    pub fn new(canvas_size: CanvasSize) -> Self {
+    pub fn new(buffer: &SharedArrayBuffer, canvas_size: CanvasSize) -> Self {
+        let exposed_array = Float32Array::new(buffer);
+
         Self {
-            buffer: VertexBuffers::new(),
             fill_tess: FillTessellator::new(),
             fill_opts: FillOptions::DEFAULT,
             canvas_size: vector![canvas_size.x, canvas_size.y],
+            exposed_array: LyonAdaptedArray::new(exposed_array),
         }
     }
 
     pub fn run_triangulation(&mut self, world: &mut World) {
-        let buffer = &mut self.buffer;
-        buffer.clear();
-
-        let mut geo_builder: BuffersBuilder<'_, Point, u16, Positions> = simple_builder(buffer);
-        let mut builder: NoAttributes<FillBuilder<'_>> =
-            self.fill_tess.builder(&self.fill_opts, &mut geo_builder);
+        self.exposed_array.clear();
 
         for (shape, position, bounds) in world
             .query_mut::<(&Shape, &Position, &Bounds)>()
             .without::<&Invisible>()
         {
             shape.write_vertices(
-                &mut builder,
+                &mut self.exposed_array,
+                &mut self.fill_tess,
+                &self.fill_opts,
                 point![
                     position.x / self.canvas_size.x,
                     position.y / self.canvas_size.y
                 ],
                 vector![bounds.x / self.canvas_size.x, bounds.y / self.canvas_size.y],
             );
+        }   
+    }
+}
+
+#[derive(Debug)]
+pub struct LyonAdaptedArray {
+    buf: Float32Array,
+    len: u32,
+}
+
+impl LyonAdaptedArray {
+    pub fn new(buf: Float32Array) -> Self {
+        return Self {
+            buf,
+            len: 0,
         }
-        
-        builder.build().unwrap();
     }
 
-    pub fn get_buffer_ptr(&self) -> VertexBufferPtr {
-
-        // TODO: vertex buffer ptr pointing to 0
-        // either wasm bindgen pointer is not doing the things i expect with this struct
-        // or this self.buffer.vertices.as_ptr() is 0.
-        VertexBufferPtr {
-            ptr: self.buffer.vertices.as_ptr() as *const f32,
-            len: self.buffer.vertices.len(),
+    pub fn clear(&mut self) {
+        for index in 0..self.len {
+            self.buf.set_index(index, 0.0);
         }
+        self.len = 0;
+    }
+
+    pub fn push_point(&mut self, point: Point2D<Precision, UnknownUnit>) {
+        self.buf.set_index(self.len, point.x);
+        self.buf.set_index(self.len + 1, point.y);
+        self.len += 2;
+    }
+}
+
+impl GeometryBuilder for LyonAdaptedArray {
+    fn add_triangle(&mut self, _: VertexId, _: VertexId, _: VertexId) {}
+}
+
+impl FillGeometryBuilder for LyonAdaptedArray {
+    fn add_fill_vertex(&mut self, vertex: FillVertex) -> Result<VertexId, GeometryBuilderError> {
+        self.push_point(vertex.position());
+        Ok(0u32.into())
     }
 }
