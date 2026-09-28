@@ -4,3 +4,4 @@ pub const PADDLE_SIZE_X: f32 = 16.0;
 pub const PADDLE_SIZE_Y: f32 = 64.0;
 pub const CANVAS_PADDLE_PADDING: f32 = 10.0;
 pub const BALL_SIDE_LENGTH: f32 = 10.0;
+pub const SIMULATION_STEP_RATE: f32 = 120.0;

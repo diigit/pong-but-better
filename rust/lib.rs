@@ -15,3 +15,9 @@ pub fn run() -> Result<(), JsValue> {
     
     Ok(())
 }
+
+#[wasm_bindgen]
+extern "C" {
+    fn setInterval(closure: &Closure<dyn FnMut()>, millis: u32) -> f64;
+    fn setTimeout(closure: &Closure<dyn FnMut()>, millis: u32) -> f64;
+}

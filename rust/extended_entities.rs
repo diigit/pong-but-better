@@ -28,7 +28,7 @@ impl PlayerPaddleSystem {
                 CANVAS_PADDLE_PADDING,
                 CANVAS_HEIGHT / 2.0 - PADDLE_SIZE_Y / 2.0,
             ]),
-            Velocity(vector![0.0, 100.0]),
+            Velocity::default(),
             Acceleration::default(),
             PADDLE_BOUNDS,
             Mass(f32::MAX),
@@ -176,7 +176,7 @@ impl BallSystem {
                 world.spawn_batch(spawn_iter);
             }
 
-            Command::StartBalls(_) => {
+            Command::StartBalls => {
                 let mut buf = CommandBuffer::new();
 
                 for (entity, entity_type, velocity, mass, _) in world.query_mut::<(
@@ -197,7 +197,7 @@ impl BallSystem {
                 buf.run_on(world);
             }
 
-            Command::RemoveAllBalls(_) => {
+            Command::RemoveAllBalls => {
                 let mut buf = CommandBuffer::new();
 
                 for (entity, entity_type) in world.query_mut::<(Entity, &ExtendedEntityType)>() {
