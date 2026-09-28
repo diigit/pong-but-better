@@ -9,13 +9,19 @@ import { GameState } from "./game-state.ts";
 import { MAX_VERTICES } from './constants.ts';
 import { GameplayCommunicator } from '../pkg/pong_but_better';
 
-let vertexBuffer = new SharedArrayBuffer(MAX_VERTICES * 2 * 32)
-let indexBuffer = new SharedArrayBuffer(MAX_VERTICES * 16)
+let vertexBuffer = new SharedArrayBuffer(MAX_VERTICES * 2 * 32);
+let indexBuffer = new SharedArrayBuffer(MAX_VERTICES * 16);
+
+// [u32; 3] 
+// [0] = Vertex Buffer Length
+// [1] = Index Buffer Length
+// [2] = Vertex buffer read/write indicator
+let dataBuffer = new SharedArrayBuffer(12); 
 let worker = new Worker("./www/gameplay.ts", { type: "module" });
 
 worker.onmessage = event => {
   if (event.data === "ready") {
-    worker.postMessage([vertexBuffer, indexBuffer])
+    worker.postMessage([vertexBuffer, indexBuffer, dataBuffer])
     
     setTimeout(() => {
       let communicator = GameplayCommunicator.new(worker);
@@ -24,8 +30,7 @@ worker.onmessage = event => {
   } 
 }
 
-
-const renderer = new PongRenderer(vertexBuffer, indexBuffer);
+const renderer = new PongRenderer(vertexBuffer, indexBuffer, dataBuffer);
 const collider = new AABBCollider();
 const gameState = new GameState(renderer, collider);
 

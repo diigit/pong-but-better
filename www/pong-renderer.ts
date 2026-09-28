@@ -7,11 +7,12 @@ let device = await gpuAdapter.requestDevice();
 if (!device) throw Error("Unable to retrieve GPU Device.");
 
 class GpuHandler {
-	constructor(canvas: HTMLCanvasElement, shared_vertex_buffer: SharedArrayBuffer, shared_index_buffer: SharedArrayBuffer) {
+	constructor(canvas: HTMLCanvasElement, shared_vertex_buffer: SharedArrayBuffer, shared_index_buffer: SharedArrayBuffer, data_buffer: SharedArrayBuffer) {
 		const canvasFormat = window.navigator.gpu.getPreferredCanvasFormat();
 
 		this.vertices = new Float32Array(shared_vertex_buffer);
 		this.indices = new Uint16Array(shared_index_buffer);
+		this.data = new Uint32Array(data_buffer);
 		this.context = canvas.getContext("webgpu") as GPUCanvasContext;
 
 		this.context.configure({
@@ -89,12 +90,16 @@ class GpuHandler {
 		})
 	}
 
-	updateBuffers() {		
-		device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices);
-		device.queue.writeBuffer(this.indexBuffer, 0, this.indices);
+	updateBuffers() {
+		device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices, 0, this.vertexBufferLen);
+		device.queue.writeBuffer(this.indexBuffer, 0, this.indices, 0, this.indexBufferLen);
 	}
 
 	render() {
+		if (this.isLocked) return;
+		this.isLocked = true;
+		
+		console.log(this.vertexBufferLen);
 		this.updateBuffers();
 
 		const encoder = device.createCommandEncoder();
@@ -111,10 +116,28 @@ class GpuHandler {
 		renderPass.setPipeline(this.renderPipeline);
 		renderPass.setVertexBuffer(0, this.vertexBuffer);
 		renderPass.setIndexBuffer(this.indexBuffer, "uint16");
-		renderPass.drawIndexed(MAX_VERTICES, 1);
+		renderPass.drawIndexed(this.indexBufferLen, 1);
 		
 		renderPass.end();
 		device.queue.submit([encoder.finish()]);
+
+		this.isLocked = false;
+	}
+
+	get vertexBufferLen() {
+		return this.data[0];
+	}
+
+	get indexBufferLen() {
+		return this.data[1];
+	}
+	
+	get isLocked(): boolean {
+		return this.data[2] == 1;
+	}
+
+	set isLocked(val: boolean) {
+		this.data[2] = val ? 1 : 0
 	}
 
 	cleanup() {
@@ -128,10 +151,11 @@ class GpuHandler {
 	private context: GPUCanvasContext;
 	private vertices: Float32Array;
 	private indices: Uint16Array;
+	private data: Uint32Array;
 }
 
 export class PongRenderer {	
-	constructor(private vertex_buffer: SharedArrayBuffer, private index_buffer: SharedArrayBuffer) {
+	constructor(private vertex_buffer: SharedArrayBuffer, private index_buffer: SharedArrayBuffer, private dataBuffer: SharedArrayBuffer) {
 		this.gpu = window.navigator.gpu;
 		if (this.gpu === undefined) Error("WebGPU is not supported by this browser.");
 	}
@@ -148,7 +172,7 @@ export class PongRenderer {
 		if (canvas === this.canvas as Node) return;
 
 		this.canvas = canvas;
-		this.gpuHandler = new GpuHandler(canvas, this.vertex_buffer, this.index_buffer);
+		this.gpuHandler = new GpuHandler(canvas, this.vertex_buffer, this.index_buffer, this.dataBuffer);
 
 		const step: FrameRequestCallback = () => {
 			if (this.gpuHandler === undefined) return;

@@ -18,7 +18,7 @@ export function GameWindow() {
 		dependencies.renderer.setCanvas(canvasElement);
 
 		return () => { dependencies.renderer.setCanvas(undefined) } 
-	}, [canvasElementRef.current, dependencies.renderer])
+	}, [dependencies.renderer])
 
 	React.useEffect(() => {
 		const ctx = Evt.newCtx();
@@ -26,14 +26,14 @@ export function GameWindow() {
 		dependencies.gameState.oppScoreChanged.attach(ctx, setOppScore);
 		dependencies.gameState.gameActivityChanged.attach(ctx, setGameActive);
 
-		if (selfScore === -1) setSelfScore(dependencies.gameState.selfScore);
-		if (oppScore === -1) setOppScore(dependencies.gameState.oppScore);
-		if (gameIsActive !== dependencies.gameState.isGameActive) setGameActive(dependencies.gameState.isGameActive);
-
 		return () => {
 			ctx.done();
 		}
-	}, [dependencies.gameState])
+	}, [dependencies.gameState, oppScore, selfScore, gameIsActive])
+
+	if (selfScore === -1) setSelfScore(dependencies.gameState.selfScore);
+	if (oppScore === -1) setOppScore(dependencies.gameState.oppScore);
+	if (gameIsActive !== dependencies.gameState.isGameActive) setGameActive(dependencies.gameState.isGameActive);
 
 	return (
 		<div className="flex-none flex flex-col bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl border-2 border-white/20 overflow-hidden">

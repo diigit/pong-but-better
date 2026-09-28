@@ -3,8 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_test::console_log;
 use web_sys::{
-    DedicatedWorkerGlobalScope, MessageEvent, Worker,
-    js_sys::{self, Promise, SharedArrayBuffer},
+    DedicatedWorkerGlobalScope, MessageEvent, Worker, js_sys::{self, Promise, SharedArrayBuffer, Uint32Array},
 };
 
 use crate::{
@@ -16,7 +15,11 @@ use crate::{
 };
 
 #[wasm_bindgen]
-pub async fn run_within_worker(vertex_buffer: SharedArrayBuffer, index_buffer: SharedArrayBuffer) {
+pub async fn run_within_worker(
+    vertex_buffer: SharedArrayBuffer,
+    index_buffer: SharedArrayBuffer,
+    data_buffer: SharedArrayBuffer,
+) {
     let global = js_sys::global().unchecked_into::<DedicatedWorkerGlobalScope>();
     let performance = global
         .performance()
@@ -39,7 +42,7 @@ pub async fn run_within_worker(vertex_buffer: SharedArrayBuffer, index_buffer: S
 
     let mut world = World::new();
 
-    let mut triangulation_sys = TriangulationSystem::new(&vertex_buffer, &index_buffer);
+    let mut triangulation_sys = TriangulationSystem::new(&vertex_buffer, &index_buffer, DataBuffer::new(data_buffer));
 
     let _ = extended_entities::PlayerPaddleSystem::create(&mut world);
     let _ = extended_entities::BotPaddleSystem::create(&mut world);
@@ -96,5 +99,34 @@ impl GameplayCommunicator {
         self.worker
             .post_message(&serde_wasm_bindgen::to_value(&command).unwrap())
             .unwrap()
+    }
+}
+
+#[derive(Debug)]
+pub struct DataBuffer {
+    array: Uint32Array,
+}
+
+impl DataBuffer {
+    pub fn new(buf: SharedArrayBuffer) -> Self {
+        Self {
+            array: Uint32Array::new(&buf),
+        }
+    }
+
+    pub fn set_locked(&mut self, locked: bool) {
+        self.array.set_index(2, locked as u32);
+    }
+
+    pub fn is_locked(&self) -> bool {
+        self.array.get_index(2) == 1
+    }
+
+    pub fn set_vertex_buf_len(&mut self, len: u32) {
+        self.array.set_index(0, len);
+    }
+
+    pub fn set_index_buf_len(&mut self, len: u32) {
+        self.array.set_index(1, len);
     }
 }
