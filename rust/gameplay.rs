@@ -1,7 +1,6 @@
 use hecs::World;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{convert::TryFromJsValue, prelude::*};
-use wasm_bindgen_test::console_log;
 use web_sys::{
     DedicatedWorkerGlobalScope, MessageEvent, OffscreenCanvas, Worker,
     js_sys::{self, Float32Array, Promise, Uint16Array},
@@ -38,8 +37,10 @@ pub async fn run_within_worker(
                 } else if let Ok(canvas) = OffscreenCanvas::try_from_js_value(event.data()) {
                     on_canvas_change.call1(&JsValue::null(), &canvas).unwrap();
                 } else if event.data() == JsValue::from_str("remove canvas") {
-                    on_canvas_change.call1(&JsValue::null(), &JsValue::undefined()).unwrap();
-                } 
+                    on_canvas_change
+                        .call1(&JsValue::null(), &JsValue::undefined())
+                        .unwrap();
+                }
             });
 
         global.set_onmessage(Some(message_handler.as_ref().unchecked_ref()));
@@ -106,6 +107,16 @@ impl GameplayCommunicator {
             y: CANVAS_HEIGHT / 2.0,
         });
 
+        self.worker
+            .post_message(&serde_wasm_bindgen::to_value(&command).unwrap())
+            .unwrap()
+    }
+
+    pub fn start_balls(&self) {
+        self.send_command(Command::StartBalls)
+    }
+
+    fn send_command(&self, command: Command) {
         self.worker
             .post_message(&serde_wasm_bindgen::to_value(&command).unwrap())
             .unwrap()

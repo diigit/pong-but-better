@@ -23,7 +23,8 @@ function setCanvas(new_canvas: HTMLCanvasElement | null) {
 }
 
 let communicator = GameplayCommunicator.new(worker);
-communicator.spawn_balls(3);
+communicator.spawn_balls(1);
+communicator.start_balls();
 
 const gameState = new GameState(communicator);
 

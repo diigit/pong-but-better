@@ -17,7 +17,11 @@ impl Default for Mass {
 
 impl Mass {
     pub fn is_anchored(&self) -> bool {
-        self.0 == f32::MAX
+        self.0 >= f32::MAX
+    }
+
+    pub fn anchored() -> Self {
+        Self(f32::MAX)
     }
 }
 

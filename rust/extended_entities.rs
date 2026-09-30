@@ -6,7 +6,6 @@ use core::f32;
 
 use hecs::{CommandBuffer, Entity, World};
 use nalgebra::{point, vector};
-use wasm_bindgen_test::console_log;
 
 use crate::{
     collisions::*, constants::{self, BALL_SIDE_LENGTH, CANVAS_HEIGHT, CANVAS_PADDLE_PADDING, CANVAS_WIDTH, PADDLE_SIZE_X, PADDLE_SIZE_Y}, movement::*, shapes::Shape, utils::Command,
@@ -32,7 +31,7 @@ impl PlayerPaddleSystem {
             Velocity::default(),
             Acceleration::default(),
             PADDLE_BOUNDS,
-            Mass(f32::MAX),
+            Mass::anchored(),
         );
 
         world
@@ -74,7 +73,7 @@ impl BotPaddleSystem {
             Velocity::default(),
             Acceleration::default(),
             PADDLE_BOUNDS,
-            Mass(f32::MAX),
+            Mass::anchored(),
         );
 
         world
@@ -166,7 +165,7 @@ impl BallSystem {
                         Position(point![args.x, args.y]),
                         Velocity::default(),
                         Acceleration::default(),
-                        Mass(f32::MAX),
+                        Mass::anchored(),
                         Bounds(vector![BALL_SIDE_LENGTH, BALL_SIDE_LENGTH]),
                         Shape::AxisAlignedBox,
                         IgnoreCollisions,
@@ -191,7 +190,7 @@ impl BallSystem {
                         buf.remove_one::<IgnoreCollisions>(entity);
 
                         *mass = Mass(1.0);
-                        *velocity = Velocity(vector![-5.0, 0.0])
+                        *velocity = Velocity(vector![-constants::BALL_SPEED, 0.0])
                     }
                 }
 

@@ -3,7 +3,6 @@ use lyon::geom::euclid::Point2D;
 use lyon::geom::euclid::UnknownUnit;
 use lyon::tessellation::*;
 use nalgebra::{point, vector};
-use wasm_bindgen_test::console_log;
 use web_sys::js_sys::Uint16Array;
 use web_sys::js_sys::{Float32Array};
 

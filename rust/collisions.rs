@@ -3,7 +3,8 @@ extern crate nalgebra as na;
 use std::collections::HashSet;
 
 use hecs::{CommandBuffer, Entity, World};
-use nalgebra::{Vector2};
+use nalgebra::Vector2;
+use wasm_bindgen_test::console_log;
 
 use crate::{movement::*, shapes::Shape};
 
@@ -20,7 +21,14 @@ pub fn spawn_collidable(
     bounds: Bounds,
     mass: Mass,
 ) -> Entity {
-    world.spawn((position, velocity, acceleration, bounds, mass, Shape::AxisAlignedBox))
+    world.spawn((
+        position,
+        velocity,
+        acceleration,
+        bounds,
+        mass,
+        Shape::AxisAlignedBox,
+    ))
 }
 
 pub struct CollidableObject<'a> {
@@ -73,7 +81,7 @@ pub struct CollisionDisplace {
 
 impl CollisionDisplace {
     pub fn from_xy(x: Precision, y: Precision) -> Self {
-        if x.abs() > y.abs() {
+        if x.abs() < y.abs() {
             Self {
                 axis: Axis::X,
                 displace: x,
@@ -86,7 +94,7 @@ impl CollisionDisplace {
         }
     }
 
-    pub fn to_vec2(&self) -> Vector2<Precision> {
+    pub fn vec2(&self) -> Vector2<Precision> {
         match self.axis {
             Axis::X => Vector2::new(self.displace, 0.0),
             Axis::Y => Vector2::new(0.0, self.displace),
@@ -121,10 +129,10 @@ pub fn are_colliding(
             return None;
         }
 
-        let move_1 = bj1 - bi2;
-        let move_2 = bj2 - bi1;
+        let move_1 = bi2 - bj1;
+        let move_2 = bi1 - bj2;
 
-        Some(if move_1.abs() < move_1.abs() {
+        Some(if move_1.abs() < move_2.abs() {
             move_1
         } else {
             move_2
@@ -135,8 +143,11 @@ pub fn are_colliding(
 }
 
 pub fn collide_static(displace: CollisionDisplace, adjusting_entity: &mut CollidableObject) {
-    adjusting_entity.position.0 += displace.to_vec2();
-    adjusting_entity.velocity.0 *= -displace.to_vec2().abs().normalize_mut()
+    let displacement_vector = displace.vec2();
+    adjusting_entity.position.0 += displacement_vector;
+    adjusting_entity.velocity.0 = adjusting_entity
+        .velocity
+        .component_mul(&-(displacement_vector.abs() / displacement_vector.magnitude()));
 }
 
 pub fn collide(
@@ -176,12 +187,12 @@ pub fn run_collisions(world: &mut World) {
                 }
 
                 if entity_i.mass.is_anchored() {
-                    collide_static(displace.negative(), &mut entity_j);
+                    collide_static(displace, &mut entity_j);
                 } else if entity_j.mass.is_anchored() {
-                    collide_static(displace, &mut entity_i);
+                    collide_static(displace.negative(), &mut entity_i);
+                } else {
+                    collide(displace, &mut entity_i, &mut entity_j);
                 }
-
-                collide(displace, &mut entity_i, &mut entity_j);
 
                 colliding_pairs.insert((entity_i.entity_id, entity_j.entity_id));
             }
