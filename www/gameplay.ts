@@ -1,13 +1,18 @@
 import { run_within_worker } from "../pkg/pong_but_better";
+import { indices, Renderer, vertices } from "./render";
 
-onmessage = event => { 	
-	let [vertexBuffer, indexBuffer, dataBuffer] = event.data;
-	
-	run_within_worker(
-		vertexBuffer, 
-		indexBuffer,
-		dataBuffer
-	).catch(console.error);
+let renderer = new Renderer;
+
+run_within_worker(
+	vertices, 
+	indices, 
+	(canvas: OffscreenCanvas | undefined) => {
+		renderer.canvas = canvas;
+	}
+).catch(console.error);
+
+function renderLoop() {
+	renderer.draw();
+	requestAnimationFrame(renderLoop);
 }
-
-postMessage("ready");
+requestAnimationFrame(renderLoop);

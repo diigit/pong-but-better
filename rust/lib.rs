@@ -4,7 +4,7 @@ mod collisions;
 mod extended_entities;
 mod movement;
 mod shapes;
-mod triangulation;
+mod render;
 mod utils;
 mod gameplay;
 mod constants;

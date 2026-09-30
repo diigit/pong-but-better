@@ -6,6 +6,7 @@ use core::f32;
 
 use hecs::{CommandBuffer, Entity, World};
 use nalgebra::{point, vector};
+use wasm_bindgen_test::console_log;
 
 use crate::{
     collisions::*, constants::{self, BALL_SIDE_LENGTH, CANVAS_HEIGHT, CANVAS_PADDLE_PADDING, CANVAS_WIDTH, PADDLE_SIZE_X, PADDLE_SIZE_Y}, movement::*, shapes::Shape, utils::Command,

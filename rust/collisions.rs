@@ -3,7 +3,7 @@ extern crate nalgebra as na;
 use std::collections::HashSet;
 
 use hecs::{CommandBuffer, Entity, World};
-use nalgebra::Vector2;
+use nalgebra::{Vector2};
 
 use crate::{movement::*, shapes::Shape};
 

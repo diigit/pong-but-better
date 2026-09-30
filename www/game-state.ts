@@ -3,8 +3,8 @@ import { AABBCollider, Axis, Barrier, Equality } from "./collisions";
 import { GameObject } from "./game-objects";
 import { BALL_MASS, BALL_WAIT_TIME, BOT_DIFFICULTY, CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT_BALL_SPEED, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_MOVE_SPEED, DEFAULT_PADDLE_WIDTH, DEFAULT_WINNING_SCORE, PADDLE_EDGE_MARGIN } from "./constants";
 import { PolygonDescriptor } from "./lib/rendering/shape-descriptors";
-import type { PongRenderer } from "./pong-renderer";
 import { Evt } from "evt";
+import type { GameplayCommunicator } from "../pkg/pong_but_better";
 
 function randomBetween(min: number, max: number) {
 	return Math.random() * (max - min) + min;
@@ -32,7 +32,87 @@ export class GameState {
 
 	public winningScore = DEFAULT_WINNING_SCORE;
 	
-	constructor(readonly renderer: PongRenderer, readonly collider: AABBCollider) {
+	constructor(private communicator: GameplayCommunicator) {
+
+	}
+
+	start() {
+	}
+
+	moveStep(deltaTime: number) {
+	}
+
+	end() {
+	}
+
+	resetBall(ign = false) {
+	}
+
+	get isGameActive() {
+		return this._isGameActive;
+	}
+
+	set isGameActive(active: boolean) {
+	}
+
+	get selfScore(): number {
+		return this._selfScore;
+	}
+
+	set selfScore(score: number) {
+	}
+
+	get oppScore(): number {
+		return this._oppScore;
+	}
+
+	set oppScore(score: number) {
+	}
+	
+	get gamemode() {
+		return this._gamemode !== undefined ? this._gamemode.type : Gamemode.Normal;
+	}
+
+	set gamemode(newGamemode: Gamemode) {
+	}
+
+	get botDifficulty() {
+		return this._botDifficulty;
+	}
+
+	set botDifficulty(newBotDifficulty: BotDifficulty) {
+	}
+
+	private onObjectCollision = (collidingObjects: []) => {
+	};
+
+	private onBarrierCollision = ([]: []) => {
+	}
+
+	private keyDownFn = (event: KeyboardEvent) => {
+	};
+
+	private keyUpFn = (event: KeyboardEvent) => {
+	};
+
+	private _isGameActive = false;
+	private _selfScore: number = 0;
+	private _oppScore: number = 0;
+	private _gamemode: GamemodeHandler | undefined;
+	private _botDifficulty = BotDifficulty.Easy;
+}
+
+// Broken
+export class GameStateOld {
+	public readonly selfScoreChanged = Evt.create<number>();
+	public readonly oppScoreChanged = Evt.create<number>();
+	public readonly gameActivityChanged = Evt.create<boolean>();
+	public readonly gamemodeChanged = Evt.create<Gamemode>();
+	public readonly botDifficultyChanged = Evt.create<BotDifficulty>();
+
+	public winningScore = DEFAULT_WINNING_SCORE;
+
+	constructor(readonly renderer: any, readonly collider: AABBCollider) {
 		this.ball = new GameObject(new PolygonDescriptor(rect(0, 0, DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE)));
 		this.ball.mass = BALL_MASS;
 		//renderer.renderGameObject(this.ball);
@@ -264,14 +344,14 @@ interface GamemodeHandler {
 
 	cleanUp(): void;
 
-	readonly gameState: GameState;
+	readonly gameState: GameStateOld;
 	readonly type: Gamemode;
 }
 
 class ExplodeYourPCGamemode implements GamemodeHandler {
 	public readonly type = Gamemode.ExplodeYourPC;
 
-	constructor(readonly gameState: GameState) {
+	constructor(readonly gameState: GameStateOld) {
 		
 	}
 	
@@ -327,7 +407,7 @@ class ExplodeYourPCGamemode implements GamemodeHandler {
 class ManyBallsGamemode implements GamemodeHandler {
 	public readonly type = Gamemode.ManyBalls;
 
-	constructor(readonly gameState: GameState) {
+	constructor(readonly gameState: GameStateOld) {
 		
 	}
 	
@@ -382,7 +462,7 @@ class ManyBallsGamemode implements GamemodeHandler {
 class ObstaclesGamemode implements GamemodeHandler {
 	public readonly type = Gamemode.Obstacles;
 
-	constructor(readonly gameState: GameState) {
+	constructor(readonly gameState: GameStateOld) {
 
 	}
 

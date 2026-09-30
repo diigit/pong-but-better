@@ -1,6 +1,6 @@
 import { MAX_VERTICES } from "./constants";
 
-let gpuAdapter = await window.navigator.gpu.requestAdapter();
+let gpuAdapter = await navigator.gpu.requestAdapter();
 if (!gpuAdapter) throw Error("Unable to retrieve GPU Adapter.");
 
 let device = await gpuAdapter.requestDevice();
@@ -91,16 +91,16 @@ class GpuHandler {
 	}
 
 	updateBuffers() {
+		if (this.isLocked) return;
+		this.isLocked = true;
 		device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices, 0, this.vertexBufferLen);
 		device.queue.writeBuffer(this.indexBuffer, 0, this.indices, 0, this.indexBufferLen);
+		this.isLocked = false;
 	}
 
 	render() {
-		if (this.isLocked) return;
-		this.isLocked = true;
-		
-		console.log(this.vertexBufferLen);
 		this.updateBuffers();
+		console.log(this.vertexBufferLen);
 
 		const encoder = device.createCommandEncoder();
 
@@ -120,8 +120,6 @@ class GpuHandler {
 		
 		renderPass.end();
 		device.queue.submit([encoder.finish()]);
-
-		this.isLocked = false;
 	}
 
 	get vertexBufferLen() {

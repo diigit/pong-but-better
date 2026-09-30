@@ -9,16 +9,11 @@ export function GameWindow() {
 
 	const [selfScore, setSelfScore] = React.useState(-1);
 	const [oppScore, setOppScore]  = React.useState(-1);
-	const [gameIsActive, setGameActive] = React.useState(false);
+	const [gameIsActive, setGameActive] = React.useState(false);	
 	
 	React.useEffect(() => {
-		const canvasElement = canvasElementRef.current;
-		if (!canvasElement) return;
-		
-		dependencies.renderer.setCanvas(canvasElement);
-
-		return () => { dependencies.renderer.setCanvas(undefined) } 
-	}, [dependencies.renderer])
+		dependencies.setCanvas(canvasElementRef.current);
+	}, [dependencies])
 
 	React.useEffect(() => {
 		const ctx = Evt.newCtx();

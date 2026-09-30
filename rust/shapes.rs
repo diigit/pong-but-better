@@ -4,7 +4,7 @@ use lyon::{
 };
 use nalgebra::{Point2, Vector2};
 
-use crate::{movement::Precision, triangulation::SharedBuffer};
+use crate::{movement::Precision, render::SharedBuffer};
 
 #[derive(Debug)]
 pub enum Shape {

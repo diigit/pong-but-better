@@ -2,43 +2,35 @@ import { StrictMode, createContext } from 'react'
 import { createRoot } from 'react-dom/client'
 import './style.css'
 import App from './App.tsx'
-import { PongRenderer } from "./pong-renderer.ts";
-import { AABBCollider } from "./collisions.ts";
 import '@fontsource/poppins';
 import { GameState } from "./game-state.ts";
-import { MAX_VERTICES } from './constants.ts';
 import { GameplayCommunicator } from '../pkg/pong_but_better';
 
-let vertexBuffer = new SharedArrayBuffer(MAX_VERTICES * 2 * 32);
-let indexBuffer = new SharedArrayBuffer(MAX_VERTICES * 16);
-
-// [u32; 3] 
-// [0] = Vertex Buffer Length
-// [1] = Index Buffer Length
-// [2] = Vertex buffer read/write indicator
-let dataBuffer = new SharedArrayBuffer(12); 
 let worker = new Worker("./www/gameplay.ts", { type: "module" });
+await new Promise((resolve) => 
+  worker.onmessage = event => { if (event.data === "ready") resolve(undefined); }
+)
 
-worker.onmessage = event => {
-  if (event.data === "ready") {
-    worker.postMessage([vertexBuffer, indexBuffer, dataBuffer])
-    
-    setTimeout(() => {
-      let communicator = GameplayCommunicator.new(worker);
-      communicator.spawn_balls(3);
-    }, 1000)
-  } 
+function setCanvas(new_canvas: HTMLCanvasElement | null) {
+  if (new_canvas) {
+    try {
+      let canvas = new_canvas.transferControlToOffscreen();
+      worker.postMessage(canvas, [canvas]);
+    } catch { }
+  } else {
+    worker.postMessage("remove canvas");
+  }
 }
 
-const renderer = new PongRenderer(vertexBuffer, indexBuffer, dataBuffer);
-const collider = new AABBCollider();
-const gameState = new GameState(renderer, collider);
+let communicator = GameplayCommunicator.new(worker);
+communicator.spawn_balls(3);
 
-export const dependencyContext = createContext({ renderer, gameState });
+const gameState = new GameState(communicator);
 
+export const dependencyContext = createContext({ setCanvas, gameState });
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <dependencyContext.Provider value={{ renderer, gameState }}>
+    <dependencyContext.Provider value={{ setCanvas, gameState }}>
       <App />
     </dependencyContext.Provider>
   </StrictMode>,

@@ -1,24 +1,26 @@
 use hecs::World;
 use std::{cell::RefCell, rc::Rc};
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{convert::TryFromJsValue, prelude::*};
 use wasm_bindgen_test::console_log;
 use web_sys::{
-    DedicatedWorkerGlobalScope, MessageEvent, Worker, js_sys::{self, Promise, SharedArrayBuffer, Uint32Array},
+    DedicatedWorkerGlobalScope, MessageEvent, OffscreenCanvas, Worker,
+    js_sys::{self, Float32Array, Promise, Uint16Array},
 };
 
 use crate::{
     collisions,
     constants::{CANVAS_HEIGHT, CANVAS_WIDTH, SIMULATION_STEP_RATE},
-    extended_entities, movement, setInterval,
-    triangulation::TriangulationSystem,
+    extended_entities, movement,
+    render::RenderSystem,
+    setInterval,
     utils::*,
 };
 
 #[wasm_bindgen]
 pub async fn run_within_worker(
-    vertex_buffer: SharedArrayBuffer,
-    index_buffer: SharedArrayBuffer,
-    data_buffer: SharedArrayBuffer,
+    vertex_array: Float32Array,
+    index_array: Uint16Array,
+    on_canvas_change: js_sys::Function,
 ) {
     let global = js_sys::global().unchecked_into::<DedicatedWorkerGlobalScope>();
     let performance = global
@@ -31,8 +33,13 @@ pub async fn run_within_worker(
         let command_buf_ref = Rc::clone(&command_buf_ref);
         let message_handler: Closure<dyn FnMut(MessageEvent)> =
             Closure::new(move |event: MessageEvent| {
-                let cmd: Command = serde_wasm_bindgen::from_value(event.data()).unwrap();
-                command_buf_ref.borrow_mut().push(cmd);
+                if let Ok(cmd) = serde_wasm_bindgen::from_value::<Command>(event.data()) {
+                    command_buf_ref.borrow_mut().push(cmd);
+                } else if let Ok(canvas) = OffscreenCanvas::try_from_js_value(event.data()) {
+                    on_canvas_change.call1(&JsValue::null(), &canvas).unwrap();
+                } else if event.data() == JsValue::from_str("remove canvas") {
+                    on_canvas_change.call1(&JsValue::null(), &JsValue::undefined()).unwrap();
+                } 
             });
 
         global.set_onmessage(Some(message_handler.as_ref().unchecked_ref()));
@@ -42,7 +49,7 @@ pub async fn run_within_worker(
 
     let mut world = World::new();
 
-    let mut triangulation_sys = TriangulationSystem::new(&vertex_buffer, &index_buffer, DataBuffer::new(data_buffer));
+    let mut triangulation_sys = RenderSystem::new(vertex_array, index_array);
 
     let _ = extended_entities::PlayerPaddleSystem::create(&mut world);
     let _ = extended_entities::BotPaddleSystem::create(&mut world);
@@ -55,26 +62,29 @@ pub async fn run_within_worker(
         let time_delta = ((time_now - time_last) / 1000.0) as f32;
         time_last = time_now;
 
-        if let Ok(command_buf) = command_buf_ref.try_borrow() {
-            for cmd in command_buf.iter() {
+        if let Ok(mut commands) = command_buf_ref.try_borrow_mut() {
+            for cmd in commands.iter() {
                 extended_entities::execute_command(&mut world, cmd);
             }
+            commands.clear();
         }
 
         movement::run_movement(&mut world, time_delta);
         collisions::run_collisions(&mut world);
         extended_entities::run_objects(&mut world, time_delta);
+        // TODO: not run this every game step, rather run it before every render.
         triangulation_sys.run_triangulation(&mut world);
     };
 
     let closure = Closure::new(gameplay_loop);
 
-    let a = Promise::new(&mut |_, _| {
+    let forever_loop = Promise::new(&mut |_, _| {
         setInterval(&closure, (1000.0 / SIMULATION_STEP_RATE) as u32); // two constants, never gonna be negative probably
     });
 
-    a.await.unwrap();
+    global.post_message(&JsValue::from_str("ready")).unwrap();
 
+    forever_loop.await.unwrap();
     closure.forget();
 }
 
@@ -99,34 +109,5 @@ impl GameplayCommunicator {
         self.worker
             .post_message(&serde_wasm_bindgen::to_value(&command).unwrap())
             .unwrap()
-    }
-}
-
-#[derive(Debug)]
-pub struct DataBuffer {
-    array: Uint32Array,
-}
-
-impl DataBuffer {
-    pub fn new(buf: SharedArrayBuffer) -> Self {
-        Self {
-            array: Uint32Array::new(&buf),
-        }
-    }
-
-    pub fn set_locked(&mut self, locked: bool) {
-        self.array.set_index(2, locked as u32);
-    }
-
-    pub fn is_locked(&self) -> bool {
-        self.array.get_index(2) == 1
-    }
-
-    pub fn set_vertex_buf_len(&mut self, len: u32) {
-        self.array.set_index(0, len);
-    }
-
-    pub fn set_index_buf_len(&mut self, len: u32) {
-        self.array.set_index(1, len);
     }
 }

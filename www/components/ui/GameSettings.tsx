@@ -18,15 +18,15 @@ export function GameSettings() {
 		dependencies.gameState.botDifficultyChanged.attach(ctx, setBotDifficulty);
 		dependencies.gameState.gamemodeChanged.attach(ctx, setGamemode);
 
-		if (gamemode !== dependencies.gameState.gamemode)
-			setGamemode(dependencies.gameState.gamemode);
-		if (botDifficulty !== dependencies.gameState.botDifficulty)
-			setBotDifficulty(dependencies.gameState.botDifficulty);
-
 		return () => {
 			ctx.done();
 		}
-	}, [dependencies.gameState]);
+	}, [dependencies.gameState, gamemode, botDifficulty]);
+	
+	if (gamemode !== dependencies.gameState.gamemode)
+		setGamemode(dependencies.gameState.gamemode);
+	if (botDifficulty !== dependencies.gameState.botDifficulty)
+		setBotDifficulty(dependencies.gameState.botDifficulty);
 
 	return <div className="flex-1">
 		<div className="flex flex-row items-center gap-2">
