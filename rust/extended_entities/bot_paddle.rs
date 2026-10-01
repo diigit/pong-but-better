@@ -40,23 +40,8 @@ impl BotPaddleSystem {
             .unwrap();
     }
 
-    pub fn exec_cmd(world: &mut World, command: &Command) {
+    pub fn exec_cmd(_: &mut World, command: &Command) {
         match command {
-            Command::SetBotMaxSpeed(_) | Command::SetBotFutureSight(_) => {
-                for entity_type in world.query_mut::<&mut ExtendedEntityType>() {
-                    if let ExtendedEntityType::BotPaddle {
-                        max_speed,
-                        future_sight,
-                    } = entity_type
-                    {
-                        if let Command::SetBotMaxSpeed(speed) = command {
-                            *max_speed = *speed;
-                        } else if let Command::SetBotFutureSight(time) = command {
-                            *future_sight = *time;
-                        };
-                    }
-                }
-            }
 
             _ => {}
         }

@@ -1,10 +1,7 @@
 use wasm_bindgen::prelude::*;
 use web_sys::Worker;
 
-use crate::{
-    constants::{CANVAS_HEIGHT, CANVAS_WIDTH},
-    utils::{BallSpawnArgs, Command},
-};
+use crate::utils::Command;
 
 #[wasm_bindgen]
 pub struct Middleman {
@@ -17,20 +14,16 @@ impl Middleman {
         Self { worker }
     }
 
-    pub fn spawn_balls(&self, count: usize) {
-        let command = Command::SpawnBall(BallSpawnArgs {
-            count,
-            x: CANVAS_WIDTH / 2.0,
-            y: CANVAS_HEIGHT / 2.0,
-        });
-
-        self.worker
-            .post_message(&serde_wasm_bindgen::to_value(&command).unwrap())
-            .unwrap()
+    pub fn request_entity(&self, index: u32){
+        self.send_command(Command::SetEntity(index));
     }
 
-    pub fn start_balls(&self) {
-        self.send_command(Command::StartBalls)
+    pub fn delete_entity(&self, index: u32){
+        self.send_command(Command::RemoveEntity(index));
+    }
+    
+    pub fn set_paused(&self, paused: bool){
+        self.send_command(Command::SetPaused(paused));
     }
 
     fn send_command(&self, command: Command) {

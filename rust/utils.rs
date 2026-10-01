@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
 
 pub fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
@@ -12,21 +11,9 @@ pub fn set_panic_hook() {
     console_error_panic_hook::set_once();
 }
 
-#[wasm_bindgen]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BallSpawnArgs {
-    pub count: usize,
-    pub x: f32,
-    pub y: f32,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     SetPaused(bool),
-    SetPlayerVelocity(f32),
-    SetBotMaxSpeed(f32),
-    SetBotFutureSight(f32),
-    SpawnBall(BallSpawnArgs),
-    RemoveAllBalls,
-    StartBalls,
+    SetEntity(u32),
+    RemoveEntity(u32),
 }

@@ -29,17 +29,8 @@ impl PlayerPaddleSystem {
             .unwrap();
     }
 
-    pub fn exec_cmd(world: &mut World, command: &Command) {
+    pub fn exec_cmd(_: &mut World, command: &Command) {
         match command {
-            Command::SetPlayerVelocity(new_velocity) => {
-                for (velocity, entity_type) in
-                    world.query_mut::<(&mut Velocity, &ExtendedEntityType)>()
-                {
-                    if let ExtendedEntityType::PlayerPaddle = entity_type {
-                        *velocity = Velocity(vector![velocity.x, *new_velocity]);
-                    }
-                }
-            }
 
             _ => (),
         }

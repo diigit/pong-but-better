@@ -2,8 +2,7 @@ use hecs::World;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{convert::TryFromJsValue, prelude::*};
 use web_sys::{
-    DedicatedWorkerGlobalScope, MessageEvent, OffscreenCanvas,
-    js_sys::{self, Float32Array, Promise, Uint16Array},
+    DedicatedWorkerGlobalScope, MessageEvent, OffscreenCanvas, js_sys::{self, Float32Array, Promise, SharedArrayBuffer, Uint16Array},
 };
 
 use crate::{
@@ -16,6 +15,7 @@ use crate::{
 pub async fn run_within_worker(
     vertex_array: Float32Array,
     index_array: Uint16Array,
+    entity_data: SharedArrayBuffer,
     on_canvas_change: js_sys::Function,
 ) {
     let global = js_sys::global().unchecked_into::<DedicatedWorkerGlobalScope>();
@@ -78,7 +78,7 @@ pub async fn run_within_worker(
         setInterval(&closure, (1000.0 / SIMULATION_STEP_RATE) as u32); // two constants, never gonna be negative probably
     });
 
-    global.post_message(&JsValue::from_str("ready")).unwrap();
+    global.post_message(&JsValue::from(entity_data)).unwrap();
 
     forever_loop.await.unwrap();
     closure.forget();

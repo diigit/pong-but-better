@@ -1,7 +1,7 @@
 {
   "name": "pong-but-better",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "pnpm wasm-dev && vite",
@@ -9,7 +9,9 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "wasm-dev": "wasm-pack build --dev --target bundler",
-    "wasm": "wasm-pack build --target bundler"
+    "wasm": "wasm-pack build --target bundler",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
   },
   "dependencies": {
     "2d-geometry": "^3.0.0",
@@ -32,6 +34,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "babel-plugin-react-compiler": "^1.0.0",
+    "oxfmt": "^0.71.0",
     "oxlint": "^1.81.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"

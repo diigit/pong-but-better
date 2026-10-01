@@ -3,6 +3,36 @@
 import { point, vector, type Point, type Vector } from "2d-geometry";
 import { Evt } from "evt";
 
+// 	Entity Buffer Layout
+
+//	[Bytes]	Value (Type)
+//  -------------------------------
+//	[00-07]	Entity Id (u64)
+//	[08-11]	Entity Type (u32)
+//	[12-19]	Position (f32 x, f32 y)
+//	[20-27]	Velocity (f32 x, f32 y)
+//	[28-35]	Acceleration (f32 x, f32 y)
+//	[36-43]	Bounds (f32 x, f32 y)
+//	[44-47]	Mass (f32)
+
+//	Entity Types
+
+//	[id]	Type
+//	----------------
+//	0		None
+//	1		Player paddle
+//	2		Enemy Paddle
+
+export const ENTITY_TYPE_OFFSET = 8;
+const POSITION_OFFSET = 12;
+const VELOCITY_OFFSET = 20;
+const ACCELERATION_OFFSET = 28;
+const BOUNDS_OFFSET = 36;
+const MASS_OFFSET = 44;
+
+let _f32_array = new Float32Array(1);
+_f32_array[0] = 3.4028235e+38;
+const F32_MAX = _f32_array[0];
 
 export class Mass {
 	constructor(public anchored = false, public value = 0) {};
@@ -11,56 +41,77 @@ export class Mass {
 export class Entity {
 	public readonly collided: Evt<(other: Entity) => void> = new Evt();
 
-	constructor() {
-		// TODO
+	constructor(protected view: DataView, protected _destroy: () => void) {
+		view.setUint32(ENTITY_TYPE_OFFSET, 0);
 	}
 
 	public destroy() {
-		// TODO
+		this._destroy();
 	}
 
 	set position(position: Point) {
-		// TODO
+		this.view.setFloat32(POSITION_OFFSET, position.x);
+		this.view.setFloat32(POSITION_OFFSET + 4, position.y);
 	}
 
 	get position(): Point {
-		// TODO
-		return point(0, 0);
+		return point(
+			this.view.getFloat32(POSITION_OFFSET), 
+			this.view.getFloat32(POSITION_OFFSET + 4)
+		);
 	}
 
 	set velocity(velocity: Vector) {
-		// TODO
+		this.view.setFloat32(VELOCITY_OFFSET, velocity.x);
+		this.view.setFloat32(VELOCITY_OFFSET + 4, velocity.y);
 	}
 
 	get velocity(): Vector {
-		// TODO
-		return vector(0, 0);
+		return vector(
+			this.view.getFloat32(VELOCITY_OFFSET), 
+			this.view.getFloat32(VELOCITY_OFFSET + 4)
+		);
 	}
 
 	set acceleration(acceleration: Vector) {
-		// TODO
+		this.view.setFloat32(ACCELERATION_OFFSET, acceleration.x);
+		this.view.setFloat32(ACCELERATION_OFFSET + 4, acceleration.y);
 	}
 
 	get acceleration(): Vector {
-		// TODO
-		return vector(0, 0);
+		return vector(
+			this.view.getFloat32(ACCELERATION_OFFSET), 
+			this.view.getFloat32(ACCELERATION_OFFSET + 4)
+		);
 	}
 
 	set mass(mass: Mass) {
-		// TODO
+		if (mass.anchored) {
+			this.view.setFloat32(MASS_OFFSET, F32_MAX) // f32 Max
+		} else {
+			this.view.setFloat32(MASS_OFFSET, mass.value) // f32 Max
+		}
 	}
 
 	get mass(): Mass {
-		// TODO
-		return new Mass;
+		let val = this.view.getFloat32(MASS_OFFSET);
+
+		if (val === F32_MAX) {
+			return new Mass(true, 0);
+		} else {
+			return new Mass(false, val);
+		}
 	}
 
 	set bounds(bounds: Vector) {
-		// TODO
+		this.view.setFloat32(BOUNDS_OFFSET, bounds.x);
+		this.view.setFloat32(BOUNDS_OFFSET + 4, bounds.y);
 	}
 
 	get bounds(): Vector {
-		// TODO
-		return vector(0, 0);
+		return vector(
+			this.view.getFloat32(BOUNDS_OFFSET), 
+			this.view.getFloat32(BOUNDS_OFFSET + 4)
+		);
 	}
 }
