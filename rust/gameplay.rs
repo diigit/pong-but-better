@@ -7,12 +7,7 @@ use web_sys::{
 };
 
 use crate::{
-    collisions,
-    constants::{CANVAS_HEIGHT, CANVAS_WIDTH, SIMULATION_STEP_RATE},
-    extended_entities, movement,
-    render::RenderSystem,
-    setInterval,
-    utils::*,
+    collisions, constants::{CANVAS_HEIGHT, CANVAS_WIDTH, SIMULATION_STEP_RATE}, extended_entities::{self, ball::BallSystem, bot_paddle::BotPaddleSystem, player_paddle::PlayerPaddleSystem}, movement, render::RenderSystem, setInterval, utils::*,
 };
 
 #[wasm_bindgen]
@@ -52,9 +47,9 @@ pub async fn run_within_worker(
 
     let mut triangulation_sys = RenderSystem::new(vertex_array, index_array);
 
-    let _ = extended_entities::PlayerPaddleSystem::create(&mut world);
-    let _ = extended_entities::BotPaddleSystem::create(&mut world);
-    let _ = extended_entities::BallSystem::create(&mut world);
+    let _ = PlayerPaddleSystem::create(&mut world);
+    let _ = BotPaddleSystem::create(&mut world);
+    let _ = BallSystem::create(&mut world);
 
     let mut time_last = performance.now();
 
