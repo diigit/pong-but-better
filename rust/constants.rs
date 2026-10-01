@@ -6,3 +6,4 @@ pub const CANVAS_PADDLE_PADDING: f32 = 10.0;
 pub const BALL_SIDE_LENGTH: f32 = 10.0;
 pub const SIMULATION_STEP_RATE: f32 = 120.0;
 pub const BALL_SPEED: f32 = 750.0;
+pub const BORDER_WIDTH: f32 = 100.0;
