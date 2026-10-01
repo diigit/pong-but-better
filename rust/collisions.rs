@@ -4,7 +4,6 @@ use std::collections::HashSet;
 
 use hecs::{CommandBuffer, Entity, World};
 use nalgebra::Vector2;
-use wasm_bindgen_test::console_log;
 
 use crate::{movement::*, shapes::Shape};
 

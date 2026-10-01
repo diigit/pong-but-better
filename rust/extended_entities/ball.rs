@@ -5,18 +5,8 @@ use nalgebra::{point, vector};
 use web_sys::js_sys::Math;
 
 use crate::{
-    collisions::*,
-    constants::{self, BALL_SIDE_LENGTH},
-    movement::*,
-    shapes::Shape,
-    utils::Command,
+    collisions::*, constants::{self, BALL_SIDE_LENGTH}, extended_entities::ExtendedEntityType, movement::*, shapes::Shape, utils::Command,
 };
-
-pub enum ExtendedEntityType {
-    PlayerPaddle,
-    BotPaddle { max_speed: f32, future_sight: f32 },
-    Ball,
-}
 
 pub struct BallSystem;
 impl BallSystem {
