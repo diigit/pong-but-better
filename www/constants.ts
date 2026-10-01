@@ -3,7 +3,7 @@ export const CANVAS_HEIGHT = 384;
 
 export const MAX_VERTICES = 128;
 export const MAX_ENTITIES = MAX_VERTICES / 4;
-export const ENTITY_BYTES = 64;
+export const ENTITY_SIZE_BYTES = 64;
 
 export const DEFAULT_PADDLE_WIDTH = 16;
 export const DEFAULT_PADDLE_HEIGHT = 64;

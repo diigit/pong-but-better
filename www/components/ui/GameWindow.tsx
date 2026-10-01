@@ -17,19 +17,19 @@ export function GameWindow() {
 
   React.useEffect(() => {
     const ctx = Evt.newCtx();
-    dependencies.gameState.selfScoreChanged.attach(ctx, setSelfScore);
-    dependencies.gameState.oppScoreChanged.attach(ctx, setOppScore);
-    dependencies.gameState.gameActivityChanged.attach(ctx, setGameActive);
+    dependencies.gamemaster.selfScoreChanged.attach(ctx, setSelfScore);
+    dependencies.gamemaster.oppScoreChanged.attach(ctx, setOppScore);
+    dependencies.gamemaster.gameActivityChanged.attach(ctx, setGameActive);
 
     return () => {
       ctx.done();
     };
-  }, [dependencies.gameState, oppScore, selfScore, gameIsActive]);
+  }, [dependencies.gamemaster, oppScore, selfScore, gameIsActive]);
 
-  if (selfScore === -1) setSelfScore(dependencies.gameState.selfScore);
-  if (oppScore === -1) setOppScore(dependencies.gameState.oppScore);
-  if (gameIsActive !== dependencies.gameState.isGameActive)
-    setGameActive(dependencies.gameState.isGameActive);
+  if (selfScore === -1) setSelfScore(dependencies.gamemaster.selfScore);
+  if (oppScore === -1) setOppScore(dependencies.gamemaster.oppScore);
+  if (gameIsActive !== dependencies.gamemaster.isGameActive)
+    setGameActive(dependencies.gamemaster.isGameActive);
 
   return (
     <div className="flex-none flex flex-col bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl border-2 border-white/20 overflow-hidden">
@@ -67,7 +67,7 @@ export function GameWindow() {
             <button
               type="button"
               className="font-sans font-bold text-lg text-normal-text/80 px-4 py-1 bg-white/30 border-2 border-white/20 rounded-xl hover:bg-gray-100/30 hover:scale-110 active:scale-90 cursor-pointer transition-all text-shadow-sm"
-              onClick={() => dependencies.gameState.start()}
+              onClick={() => dependencies.gamemaster.start()}
             >
               PLAY
             </button>

@@ -1,5 +1,5 @@
 import { dependencyContext } from "../../main";
-import { BotDifficulty, Gamemode } from "../../game-state";
+import { BotDifficulty, Gamemode } from "../../gamemaster";
 import { Evt } from "evt";
 import React from "react";
 
@@ -30,17 +30,17 @@ export function GameSettings() {
   React.useEffect(() => {
     const ctx = Evt.newCtx();
 
-    dependencies.gameState.botDifficultyChanged.attach(ctx, setBotDifficulty);
-    dependencies.gameState.gamemodeChanged.attach(ctx, setGamemode);
+    dependencies.gamemaster.botDifficultyChanged.attach(ctx, setBotDifficulty);
+    dependencies.gamemaster.gamemodeChanged.attach(ctx, setGamemode);
 
     return () => {
       ctx.done();
     };
-  }, [dependencies.gameState, gamemode, botDifficulty]);
+  }, [dependencies.gamemaster, gamemode, botDifficulty]);
 
-  if (gamemode !== dependencies.gameState.gamemode) setGamemode(dependencies.gameState.gamemode);
-  if (botDifficulty !== dependencies.gameState.botDifficulty)
-    setBotDifficulty(dependencies.gameState.botDifficulty);
+  if (gamemode !== dependencies.gamemaster.gamemode) setGamemode(dependencies.gamemaster.gamemode);
+  if (botDifficulty !== dependencies.gamemaster.botDifficulty)
+    setBotDifficulty(dependencies.gamemaster.botDifficulty);
 
   return (
     <div className="flex-1">
@@ -50,21 +50,21 @@ export function GameSettings() {
           <div className="flex flex-row gap-2 m-1">
             <SettingsButton
               onClick={() => {
-                dependencies.gameState.botDifficulty = BotDifficulty.Easy;
+                dependencies.gamemaster.botDifficulty = BotDifficulty.Easy;
               }}
               selected={botDifficulty === BotDifficulty.Easy}
               text="Easy"
             />
             <SettingsButton
               onClick={() => {
-                dependencies.gameState.botDifficulty = BotDifficulty.Medium;
+                dependencies.gamemaster.botDifficulty = BotDifficulty.Medium;
               }}
               selected={botDifficulty === BotDifficulty.Medium}
               text="Medium"
             />
             <SettingsButton
               onClick={() => {
-                dependencies.gameState.botDifficulty = BotDifficulty.Hard;
+                dependencies.gamemaster.botDifficulty = BotDifficulty.Hard;
               }}
               selected={botDifficulty === BotDifficulty.Hard}
               text="Hard"
@@ -76,28 +76,28 @@ export function GameSettings() {
           <div className="flex flex-row gap-2 m-1">
             <SettingsButton
               onClick={() => {
-                dependencies.gameState.gamemode = Gamemode.Normal;
+                dependencies.gamemaster.gamemode = Gamemode.Normal;
               }}
               selected={gamemode === Gamemode.Normal}
               text="Normal"
             />
             <SettingsButton
               onClick={() => {
-                dependencies.gameState.gamemode = Gamemode.Obstacles;
+                dependencies.gamemaster.gamemode = Gamemode.Obstacles;
               }}
               selected={gamemode === Gamemode.Obstacles}
               text="Obstacles"
             />
             <SettingsButton
               onClick={() => {
-                dependencies.gameState.gamemode = Gamemode.ManyBalls;
+                dependencies.gamemaster.gamemode = Gamemode.ManyBalls;
               }}
               selected={gamemode === Gamemode.ManyBalls}
               text="Too Many Balls"
             />
             <SettingsButton
               onClick={() => {
-                dependencies.gameState.gamemode = Gamemode.ExplodeYourPC;
+                dependencies.gamemaster.gamemode = Gamemode.ExplodeYourPC;
               }}
               selected={gamemode === Gamemode.ExplodeYourPC}
               text="Explode Your PC"

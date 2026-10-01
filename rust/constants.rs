@@ -1,9 +1,3 @@
 pub const CANVAS_WIDTH: f32 = 1024.0;
 pub const CANVAS_HEIGHT: f32 = 384.0;
-pub const PADDLE_SIZE_X: f32 = 16.0;
-pub const PADDLE_SIZE_Y: f32 = 64.0;
-pub const CANVAS_PADDLE_PADDING: f32 = 10.0;
-pub const BALL_SIDE_LENGTH: f32 = 10.0;
 pub const SIMULATION_STEP_RATE: f32 = 120.0;
-pub const BALL_SPEED: f32 = 750.0;
-pub const BORDER_WIDTH: f32 = 100.0;

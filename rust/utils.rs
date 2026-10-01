@@ -12,8 +12,14 @@ pub fn set_panic_hook() {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EntityCreationParams {
+    pub index: u32,
+    pub ent_type: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     SetPaused(bool),
-    SetEntity(u32),
+    SetEntity(EntityCreationParams),
     RemoveEntity(u32),
 }

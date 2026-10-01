@@ -2,12 +2,13 @@
 
 import { point, vector, type Point, type Vector } from "2d-geometry";
 import { Evt } from "evt";
+import { ENTITY_SIZE_BYTES } from "../constants";
 
 // 	Entity Buffer Layout
 
 //	[Bytes]	Value (Type)
 //  -------------------------------
-//	[00-07]	Entity Id (u64)
+//	[04-07]	Entity Id (u32)
 //	[08-11]	Entity Type (u32)
 //	[12-19]	Position (f32 x, f32 y)
 //	[20-27]	Velocity (f32 x, f32 y)
@@ -19,9 +20,10 @@ import { Evt } from "evt";
 
 //	[id]	Type
 //	----------------
-//	0		None
-//	1		Player paddle
-//	2		Enemy Paddle
+//	1		Uninitialized
+//	2		None
+//	3		Player paddle
+//	4		Enemy Paddle
 
 export const ENTITY_TYPE_OFFSET = 8;
 const POSITION_OFFSET = 12;
@@ -41,7 +43,7 @@ export class Mass {
 export class Entity {
 	public readonly collided: Evt<(other: Entity) => void> = new Evt();
 
-	constructor(protected view: DataView, protected _destroy: () => void) {
+	constructor(protected view: DataView, protected _set_updated: () => void, protected _destroy: () => void = () => {}) {
 		view.setUint32(ENTITY_TYPE_OFFSET, 0);
 	}
 
@@ -52,6 +54,7 @@ export class Entity {
 	set position(position: Point) {
 		this.view.setFloat32(POSITION_OFFSET, position.x);
 		this.view.setFloat32(POSITION_OFFSET + 4, position.y);
+		this._set_updated();
 	}
 
 	get position(): Point {
@@ -64,6 +67,7 @@ export class Entity {
 	set velocity(velocity: Vector) {
 		this.view.setFloat32(VELOCITY_OFFSET, velocity.x);
 		this.view.setFloat32(VELOCITY_OFFSET + 4, velocity.y);
+		this._set_updated();
 	}
 
 	get velocity(): Vector {
@@ -76,6 +80,7 @@ export class Entity {
 	set acceleration(acceleration: Vector) {
 		this.view.setFloat32(ACCELERATION_OFFSET, acceleration.x);
 		this.view.setFloat32(ACCELERATION_OFFSET + 4, acceleration.y);
+		this._set_updated();
 	}
 
 	get acceleration(): Vector {
@@ -91,6 +96,7 @@ export class Entity {
 		} else {
 			this.view.setFloat32(MASS_OFFSET, mass.value) // f32 Max
 		}
+		this._set_updated();
 	}
 
 	get mass(): Mass {
@@ -106,6 +112,7 @@ export class Entity {
 	set bounds(bounds: Vector) {
 		this.view.setFloat32(BOUNDS_OFFSET, bounds.x);
 		this.view.setFloat32(BOUNDS_OFFSET + 4, bounds.y);
+		this._set_updated();
 	}
 
 	get bounds(): Vector {
@@ -114,4 +121,8 @@ export class Entity {
 			this.view.getFloat32(BOUNDS_OFFSET + 4)
 		);
 	}
+}
+
+export function getDataView(shared_buffer: SharedArrayBuffer, index: number): DataView {
+	return new DataView(shared_buffer, (index + 1) * ENTITY_SIZE_BYTES, ENTITY_SIZE_BYTES);
 }

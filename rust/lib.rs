@@ -1,7 +1,6 @@
 use wasm_bindgen::{JsValue, prelude::*};
 
 mod collisions;
-mod extended_entities;
 mod movement;
 mod shapes;
 mod render;
@@ -9,6 +8,7 @@ mod utils;
 mod gameplay;
 mod constants;
 mod middleman;
+mod entity_tracker;
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {

@@ -2,13 +2,13 @@ use hecs::World;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{convert::TryFromJsValue, prelude::*};
 use web_sys::{
-    DedicatedWorkerGlobalScope, MessageEvent, OffscreenCanvas, js_sys::{self, Float32Array, Promise, SharedArrayBuffer, Uint16Array},
+    DedicatedWorkerGlobalScope, MessageEvent, OffscreenCanvas,
+    js_sys::{self, Float32Array, Promise, SharedArrayBuffer, Uint16Array},
 };
 
 use crate::{
-    collisions, constants::SIMULATION_STEP_RATE, extended_entities::{
-        self, create_all,
-    }, movement, render::RenderSystem, setInterval, utils::*,
+    collisions, constants::SIMULATION_STEP_RATE, entity_tracker::EntityTrackingSystem, movement,
+    render::RenderSystem, setInterval, utils::*,
 };
 
 #[wasm_bindgen]
@@ -16,6 +16,7 @@ pub async fn run_within_worker(
     vertex_array: Float32Array,
     index_array: Uint16Array,
     entity_data: SharedArrayBuffer,
+    entity_byte_size: usize,
     on_canvas_change: js_sys::Function,
 ) {
     let global = js_sys::global().unchecked_into::<DedicatedWorkerGlobalScope>();
@@ -48,26 +49,43 @@ pub async fn run_within_worker(
     let mut world = World::new();
 
     let mut triangulation_sys = RenderSystem::new(vertex_array, index_array);
-
-    create_all(&mut world);
+    let mut entity_tracker = EntityTrackingSystem::new(entity_data.clone(), entity_byte_size);
 
     let mut time_last = performance.now();
+
+    let global_clone = global.clone();
 
     let gameplay_loop = move || {
         let time_now = performance.now();
         let time_delta = ((time_now - time_last) / 1000.0) as f32;
         time_last = time_now;
 
+        entity_tracker.write_from_buffer(&mut world);
+
         if let Ok(mut commands) = command_buf_ref.try_borrow_mut() {
+            let mut do_fire_entites_created = false;
+
             for cmd in commands.iter() {
-                extended_entities::execute_command(&mut world, cmd);
+                entity_tracker.execute_cmd(&mut world, cmd);
+
+                if let Command::SetEntity(_) = cmd {
+                    do_fire_entites_created = true;
+                }
             }
+
+            if do_fire_entites_created {
+                global_clone
+                    .post_message(&JsValue::from("entity created"))
+                    .unwrap();
+            }
+
             commands.clear();
         }
 
         movement::run_movement(&mut world, time_delta);
         collisions::run_collisions(&mut world);
-        extended_entities::run_all(&mut world, time_delta);
+        entity_tracker.update_buffer(&mut world);
+
         // TODO: not run this every game step, rather run it before every render.
         triangulation_sys.run_triangulation(&mut world);
     };

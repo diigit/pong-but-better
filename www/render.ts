@@ -69,7 +69,7 @@ export class Renderer {
     const encoder = device.createCommandEncoder();
 
     device.queue.writeBuffer(vertexBuffer, 0, vertices);
-    device.queue.writeBuffer(indexBuffer, 0, indices);
+    device.queue.writeBuffer(indexBuffer, 0, indices);    
 
     const renderPass = encoder.beginRenderPass({
       colorAttachments: [

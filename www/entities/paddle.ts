@@ -11,8 +11,8 @@ const MAX_SPEED_OFFSET = 48;
 const REACTION_TIME_OFFSET = 52;
 
 export class Paddle extends Entity {
-	constructor(view: DataView, _destroy: () => void) {
-		super(view, _destroy);
+	constructor(view: DataView, _set_updated: () => void, _destroy: () => void) {
+		super(view, _set_updated, _destroy);
 
 		this.mass = new Mass(true, 0);
 		view.setUint32(ENTITY_TYPE_OFFSET, 1);
@@ -20,6 +20,7 @@ export class Paddle extends Entity {
 
 	set maxSpeed(maxSpeed: number) {
 		this.view.setFloat32(MAX_SPEED_OFFSET, maxSpeed);
+		this._set_updated();
 	}
 
 	get maxSpeed(): number {
@@ -28,14 +29,15 @@ export class Paddle extends Entity {
 }
 
 export class BotPaddle extends Paddle {
-	constructor(view: DataView, _destroy: () => void) {
-		super(view, _destroy);
+	constructor(view: DataView, _set_updated: () => void, _destroy: () => void) {
+		super(view, _set_updated, _destroy);
 
 		view.setUint32(ENTITY_TYPE_OFFSET, 2);
 	}
 	
 	set reactionTime(time: number) {
 		this.view.setFloat32(REACTION_TIME_OFFSET, time);
+		this._set_updated();
 	}
 
 	get reactionTime(): number {
