@@ -8,6 +8,7 @@ mod render;
 mod utils;
 mod gameplay;
 mod constants;
+mod middleman;
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {
