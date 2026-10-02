@@ -1,9 +1,10 @@
 extern crate nalgebra as na;
 
-use std::collections::HashSet;
+use std::{collections::HashSet};
 
 use hecs::{CommandBuffer, Entity, World};
 use nalgebra::Vector2;
+use wasm_bindgen_test::console_log;
 
 use crate::{movement::*, shapes::Shape};
 
@@ -31,7 +32,6 @@ pub fn spawn_collidable(
 }
 
 pub struct CollidableObject<'a> {
-    pub entity_id: Entity,
     pub position: &'a mut Position,
     pub velocity: &'a mut Velocity,
     pub bounds: &'a Bounds,
@@ -40,7 +40,6 @@ pub struct CollidableObject<'a> {
 
 impl<'a>
     From<(
-        Entity,
         &'a mut Position,
         &'a mut Velocity,
         &'a Bounds,
@@ -49,7 +48,6 @@ impl<'a>
 {
     fn from(
         t: (
-            Entity,
             &'a mut Position,
             &'a mut Velocity,
             &'a Bounds,
@@ -57,11 +55,10 @@ impl<'a>
         ),
     ) -> Self {
         Self {
-            entity_id: t.0,
-            position: t.1,
-            velocity: t.2,
-            bounds: t.3,
-            mass: t.4,
+            position: t.0,
+            velocity: t.1,
+            bounds: t.2,
+            mass: t.3,
         }
     }
 }
@@ -170,16 +167,24 @@ pub fn collide(
 }
 
 pub fn run_collisions(world: &mut World) {
-    let mut query_iter = world
+    let query = world
         .query_mut::<(Entity, &mut Position, &mut Velocity, &Bounds, &Mass)>()
-        .without::<&IgnoreCollisions>()
-        .into_iter()
-        .map(CollidableObject::from);
+        .without::<&IgnoreCollisions>();
+    let entity_ids: Vec<Entity> = query.into_iter().map(|(e, _, _, _, _)| e).collect();
 
     let mut colliding_pairs = HashSet::new();
 
-    while let Some(mut entity_i) = query_iter.next() {
-        for mut entity_j in &mut query_iter {
+    for i in 0..entity_ids.len() {
+        for j in (i + 1)..entity_ids.len() {
+            let [result_i, result_j] = world
+                .query_disjoint_mut::<(&mut Position, &mut Velocity, &Bounds, &Mass), 2>([
+                    entity_ids[i],
+                    entity_ids[j],
+                ]);
+
+            let mut entity_i = CollidableObject::from(result_i.unwrap());
+            let mut entity_j = CollidableObject::from(result_j.unwrap());
+
             if let Some(displace) = are_colliding(&entity_i, &entity_j) {
                 if entity_i.mass.is_anchored() && entity_j.mass.is_anchored() {
                     continue;
@@ -193,7 +198,7 @@ pub fn run_collisions(world: &mut World) {
                     collide(displace, &mut entity_i, &mut entity_j);
                 }
 
-                colliding_pairs.insert((entity_i.entity_id, entity_j.entity_id));
+                colliding_pairs.insert((entity_ids[i], entity_ids[j]));
             }
         }
     }

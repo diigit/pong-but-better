@@ -41,11 +41,11 @@ export class Mass {
 }
 
 export class Entity {
+	public readonly entityType: number = 1;
+
 	public readonly collided: Evt<(other: Entity) => void> = new Evt();
 
-	constructor(protected view: DataView, protected _set_updated: () => void, protected _destroy: () => void = () => {}) {
-		view.setUint32(ENTITY_TYPE_OFFSET, 0);
-	}
+	constructor(protected view: DataView, protected _set_updated: () => void, protected _destroy: () => void = () => {}) {}
 
 	public destroy() {
 		this._destroy();

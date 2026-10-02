@@ -1,5 +1,6 @@
 use hecs::{Entity, World};
 use nalgebra::{Vector2, point, vector};
+use wasm_bindgen_test::console_log;
 use web_sys::js_sys::{DataView, SharedArrayBuffer};
 
 use crate::{
@@ -45,7 +46,7 @@ impl EntityTrackingSystem {
                     data_view.get_float32(POSITION_OFFSET),
                     data_view.get_float32(POSITION_OFFSET + 4)
                 ]);
-                
+
                 *vel = Velocity(vector![
                     data_view.get_float32(VELOCITY_OFFSET),
                     data_view.get_float32(VELOCITY_OFFSET + 4)
@@ -166,7 +167,7 @@ impl EntityTrackingSystem {
     }
 
     fn is_updated(&self) -> bool {
-        self.updated.get_uint8(0) == 1 
+        self.updated.get_uint8(0) == 1
     }
 
     fn set_updated(&self, updated: bool) {

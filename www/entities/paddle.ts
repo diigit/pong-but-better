@@ -1,4 +1,6 @@
-import { Entity, ENTITY_TYPE_OFFSET, Mass } from ".";
+import { vector } from "2d-geometry";
+import { Entity, Mass } from ".";
+import { DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_WIDTH } from "../constants";
 
 // 	Paddle Layout
 
@@ -11,11 +13,13 @@ const MAX_SPEED_OFFSET = 48;
 const REACTION_TIME_OFFSET = 52;
 
 export class Paddle extends Entity {
+	public readonly entityType: number = 2;
+
 	constructor(view: DataView, _set_updated: () => void, _destroy: () => void) {
 		super(view, _set_updated, _destroy);
 
 		this.mass = new Mass(true, 0);
-		view.setUint32(ENTITY_TYPE_OFFSET, 1);
+		this.bounds = vector(DEFAULT_PADDLE_WIDTH, DEFAULT_PADDLE_HEIGHT);
 	}
 
 	set maxSpeed(maxSpeed: number) {
@@ -29,10 +33,10 @@ export class Paddle extends Entity {
 }
 
 export class BotPaddle extends Paddle {
+	public readonly entityType: number = 3;
+
 	constructor(view: DataView, _set_updated: () => void, _destroy: () => void) {
 		super(view, _set_updated, _destroy);
-
-		view.setUint32(ENTITY_TYPE_OFFSET, 2);
 	}
 	
 	set reactionTime(time: number) {

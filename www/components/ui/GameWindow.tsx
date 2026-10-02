@@ -50,7 +50,7 @@ export function GameWindow() {
       </div>
       <div className="m-2.5 relative z-1">
         <canvas
-          className={`${!gameIsActive ? "blur-xs" : ""}`}
+          className={`${!gameIsActive ? "blur-xs" : ""}`} 
           width={CANVAS_WIDTH}
           height={CANVAS_HEIGHT}
           ref={canvasElementRef}
