@@ -11,6 +11,22 @@ type EntityConstructor<T extends Entity> = new (
 export class EntityTracker {
 	constructor(private worker: Worker, private middleman: Middleman, private buffer: SharedArrayBuffer) {
 		this.updatedView = getDataView(buffer, -1)
+
+		worker.addEventListener("message", (event) => {
+			if (Array.isArray(event.data)) {
+				let array = event.data as Array<number>;
+				
+				for (let i = 0; i < array.length; i += 2) {
+					let entityI = this.getEntity(array[i]);
+					let entityJ = this.getEntity(array[i + 1]);
+
+					if (entityI === undefined || entityJ === undefined) return;
+
+					entityI.collided.post(entityJ);
+					entityJ.collided.post(entityI);
+				}
+			}
+		});
 	}
 	
 	createEntity<T extends Entity>(entityType: EntityConstructor<T>): Promise<T> {
@@ -18,7 +34,7 @@ export class EntityTracker {
 		let dataView = getDataView(this.buffer, index);
 
 		let entity = new entityType(dataView, () => this.setUpdated(), () => {
-			// TODO
+			this.middleman.delete_entity(index)
 		});
 
 		this.middleman.request_entity((index) * ENTITY_SIZE_BYTES, entity.entityType);
@@ -38,10 +54,14 @@ export class EntityTracker {
 		return promise;
 	}
 
-  setUpdated() {
-    this.updatedView.setUint8(0, 1);
-  }
+	setUpdated() {
+		this.updatedView.setUint8(0, 1);
+	}
 
-  private updatedView;
-  private entities: Entity[] = [];
+	getEntity(id: number): Entity | undefined {
+		return this.entities.find((e) => !e.isDestroyed() && e.id === id);
+	}
+
+	private updatedView;
+	private entities: Entity[] = [];
 }

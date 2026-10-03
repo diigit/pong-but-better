@@ -1,10 +1,14 @@
 extern crate nalgebra as na;
 
-use std::{collections::HashSet};
+use std::{
+    collections::{HashSet, hash_set::Iter},
+    hash::Hash,
+};
 
 use hecs::{CommandBuffer, Entity, World};
 use nalgebra::Vector2;
-use wasm_bindgen_test::console_log;
+use wasm_bindgen::JsValue;
+use web_sys::js_sys::Array;
 
 use crate::{movement::*, shapes::Shape};
 
@@ -38,22 +42,8 @@ pub struct CollidableObject<'a> {
     pub mass: &'a Mass,
 }
 
-impl<'a>
-    From<(
-        &'a mut Position,
-        &'a mut Velocity,
-        &'a Bounds,
-        &'a Mass,
-    )> for CollidableObject<'a>
-{
-    fn from(
-        t: (
-            &'a mut Position,
-            &'a mut Velocity,
-            &'a Bounds,
-            &'a Mass,
-        ),
-    ) -> Self {
+impl<'a> From<(&'a mut Position, &'a mut Velocity, &'a Bounds, &'a Mass)> for CollidableObject<'a> {
+    fn from(t: (&'a mut Position, &'a mut Velocity, &'a Bounds, &'a Mass)) -> Self {
         Self {
             position: t.0,
             velocity: t.1,
@@ -141,9 +131,9 @@ pub fn are_colliding(
 pub fn collide_static(displace: CollisionDisplace, adjusting_entity: &mut CollidableObject) {
     let displacement_vector = displace.vec2();
     adjusting_entity.position.0 += displacement_vector;
-    adjusting_entity.velocity.0 = adjusting_entity
+    adjusting_entity.velocity.0 += adjusting_entity
         .velocity
-        .component_mul(&-(displacement_vector.abs() / displacement_vector.magnitude()));
+        .component_mul(&-(2.0 * displacement_vector.abs() / displacement_vector.magnitude()));
 }
 
 pub fn collide(
@@ -172,7 +162,7 @@ pub fn run_collisions(world: &mut World) {
         .without::<&IgnoreCollisions>();
     let entity_ids: Vec<Entity> = query.into_iter().map(|(e, _, _, _, _)| e).collect();
 
-    let mut colliding_pairs = HashSet::new();
+    let mut colliding_pairs = PairsSet::new();
 
     for i in 0..entity_ids.len() {
         for j in (i + 1)..entity_ids.len() {
@@ -198,7 +188,7 @@ pub fn run_collisions(world: &mut World) {
                     collide(displace, &mut entity_i, &mut entity_j);
                 }
 
-                colliding_pairs.insert((entity_ids[i], entity_ids[j]));
+                colliding_pairs.add(entity_ids[i], entity_ids[j]);
             }
         }
     }
@@ -206,14 +196,7 @@ pub fn run_collisions(world: &mut World) {
     let mut world_command_buffer = CommandBuffer::new();
 
     for (entity_id, colliding_with) in world.query_mut::<(Entity, &CollidingWith)>() {
-        let tuple = &(entity_id, colliding_with.0);
-        let reverse = &(colliding_with.0, entity_id);
-
-        if colliding_pairs.contains(tuple) {
-            colliding_pairs.remove(tuple);
-        } else if colliding_pairs.contains(reverse) {
-            colliding_pairs.remove(reverse);
-        } else {
+        if !colliding_pairs.remove(entity_id, colliding_with.0) {
             world_command_buffer.remove_one::<CollidingWith>(entity_id);
         }
     }
@@ -224,4 +207,78 @@ pub fn run_collisions(world: &mut World) {
     });
 
     world_command_buffer.run_on(world);
+}
+
+pub struct PairsSet<T>
+where
+    T: Copy + Hash + Eq + ?Sized,
+{
+    set: HashSet<(T, T)>,
+}
+
+impl<T> PairsSet<T>
+where
+    T: Copy + Hash + Eq + ?Sized,
+{
+    pub fn new() -> Self {
+        Self {
+            set: HashSet::new(),
+        }
+    }
+
+    pub fn get(&self, i: T, j: T) -> Option<(T, T)> {
+        let tuple = (i, j);
+        let reverse = (j, i);
+
+        if self.set.contains(&tuple) {
+            return Some(tuple);
+        } else if self.set.contains(&reverse) {
+            return Some(reverse);
+        }
+
+        None
+    }
+
+    pub fn add(&mut self, i: T, j: T) {
+        if self.get(i, j) != None {
+            return;
+        }
+
+        self.set.insert((i, j));
+    }
+
+    pub fn remove(&mut self, i: T, j: T) -> bool {
+        if let Some(tuple) = self.get(i, j) {
+            return self.set.remove(&tuple);
+        }
+
+        false
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.set.is_empty()
+    }
+
+    pub fn iter(&self) -> Iter<'_, (T, T)> {
+        return self.set.iter();
+    }
+}
+
+pub fn get_collisions(world: &mut World) -> Option<Array> {
+    let mut all_pairs = PairsSet::new();
+
+    for (entity_id, colliding_with) in world.query_mut::<(Entity, &CollidingWith)>() {
+        all_pairs.add(entity_id, colliding_with.0);
+    }
+
+    if all_pairs.is_empty() { return None; }
+
+    let array: Array = Array::new();
+
+    all_pairs.iter().for_each(|(i, j)| {
+        array.push(&JsValue::from(i.id()));
+        array.push(&JsValue::from(j.id()));
+    });
+
+    Some(array)
 }

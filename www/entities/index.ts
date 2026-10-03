@@ -25,7 +25,8 @@ import { ENTITY_SIZE_BYTES } from "../constants";
 //	3		Player paddle
 //	4		Enemy Paddle
 
-export const ENTITY_TYPE_OFFSET = 8;
+const ENTITY_ID_OFFSET = 4;
+//const ENTITY_TYPE_OFFSET = 8;
 const POSITION_OFFSET = 12;
 const VELOCITY_OFFSET = 20;
 const ACCELERATION_OFFSET = 28;
@@ -43,12 +44,17 @@ export class Mass {
 export class Entity {
 	public readonly entityType: number = 1;
 
-	public readonly collided: Evt<(other: Entity) => void> = new Evt();
+	public readonly collided: Evt<Entity> = new Evt();
 
 	constructor(protected view: DataView, protected _set_updated: () => void, protected _destroy: () => void = () => {}) {}
 
 	public destroy() {
+		this.destroyed = true;
 		this._destroy();
+	}
+
+	public isDestroyed() {
+		return this.destroyed;
 	}
 
 	set position(position: Point) {
@@ -121,6 +127,12 @@ export class Entity {
 			this.view.getFloat32(BOUNDS_OFFSET + 4)
 		);
 	}
+
+	get id(): number {
+		return this.view.getInt32(ENTITY_ID_OFFSET);
+	}
+
+	private destroyed = false;
 }
 
 export function getDataView(shared_buffer: SharedArrayBuffer, index: number): DataView {

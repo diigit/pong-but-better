@@ -1,10 +1,11 @@
 import { Evt } from "evt";
-import { BALL_MASS, CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_BALL_SIZE, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_WIDTH, DEFAULT_WINNING_SCORE } from "./constants";
+import { BORDER_THICKNESS, CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_WIDTH, DEFAULT_WINNING_SCORE } from "./constants";
 import { Middleman } from "../pkg/pong_but_better";
 import { EntityTracker } from "./entity_tracker";
 import { BotPaddle, Paddle } from "./entities/paddle";
 import { Entity, Mass } from "./entities";
 import { point, vector } from "2d-geometry";
+import { DefaultGamemode } from "./gamemodes/default";
 
 export enum Gamemode {
   Normal,
@@ -28,13 +29,39 @@ export class Gamemaster {
 
   public winningScore = DEFAULT_WINNING_SCORE;
 
-  private constructor(private entityTracker: EntityTracker, private playerPaddle: Paddle, private botPaddle: Paddle, private ball: Entity) {
-    this._isGameActive = true;
+  private constructor(
+    public readonly entityTracker: EntityTracker, 
+    public readonly playerPaddle: Paddle, 
+    public readonly botPaddle: Paddle, 
+    public readonly leftBoundary: Entity, 
+    public readonly rightBoundary: Entity
+  ) {
+    
   }
 
   static async create(worker: Worker, buffer: SharedArrayBuffer): Promise<Gamemaster> {
     let middleman = Middleman.new(worker);
     let entityTracker = new EntityTracker(worker, middleman, buffer)
+    
+    let upperBoundary = await entityTracker.createEntity(Entity);
+    upperBoundary.position = point(0, CANVAS_HEIGHT);
+    upperBoundary.bounds = vector(CANVAS_WIDTH, BORDER_THICKNESS);
+    upperBoundary.mass = new Mass(true, 0);
+    
+    let lowerBoundary = await entityTracker.createEntity(Entity);
+    lowerBoundary.position = point(0, -BORDER_THICKNESS);
+    lowerBoundary.bounds = vector(CANVAS_WIDTH, BORDER_THICKNESS);
+    lowerBoundary.mass = new Mass(true, 0);
+    
+    let leftBoundary = await entityTracker.createEntity(Entity);
+    leftBoundary.position = point(-BORDER_THICKNESS, 0);
+    leftBoundary.bounds = vector(BORDER_THICKNESS, CANVAS_HEIGHT);
+    leftBoundary.mass = new Mass(true, 0);
+    
+    let rightBoundary = await entityTracker.createEntity(Entity);
+    rightBoundary.position = point(CANVAS_WIDTH, 0);
+    rightBoundary.bounds = vector(BORDER_THICKNESS, CANVAS_HEIGHT);
+    rightBoundary.mass = new Mass(true, 0);
 
     let botPaddle = await entityTracker.createEntity(BotPaddle);
     botPaddle.position = point(CANVAS_WIDTH - DEFAULT_PADDLE_WIDTH, CANVAS_HEIGHT/2 - DEFAULT_PADDLE_HEIGHT/2);
@@ -42,18 +69,16 @@ export class Gamemaster {
     let playerPaddle = await entityTracker.createEntity(Paddle);
     playerPaddle.position = point(0, CANVAS_HEIGHT/2 - DEFAULT_PADDLE_HEIGHT/2);
 
-    let ball = await entityTracker.createEntity(Entity);
-    ball.position = point(CANVAS_WIDTH/2 - DEFAULT_BALL_SIZE/2, CANVAS_HEIGHT/2 - DEFAULT_BALL_SIZE/2);
-    ball.bounds = vector(DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE);
-    ball.mass = new Mass(false, BALL_MASS);
-    ball.velocity = vector(1000, 0);
-
-    return new Gamemaster(entityTracker, playerPaddle, botPaddle, ball);
+    return new Gamemaster(entityTracker, playerPaddle, botPaddle, leftBoundary, rightBoundary);
   }
 
-  start() {}
+  async start() {
+    this._gamemode = await DefaultGamemode.create(this);
+  }
 
-  end() {}
+  async end() {
+    this._gamemode?.destroy();
+  }
 
   resetBall() {}
 
@@ -103,7 +128,7 @@ export class Gamemaster {
     this.selfScore = 0;
     this.oppScore = 0;
 
-    this.end();
+    this.end().catch(console.error);
     //this._gamemode?.cleanUp();
 
     //let gamemodeHandler;
@@ -137,4 +162,6 @@ export class Gamemaster {
   private _oppScore: number = 0;
   //private _gamemode: GamemodeHandler | undefined;
   private _botDifficulty = BotDifficulty.Easy;
+
+  private _gamemode: DefaultGamemode | undefined = undefined;
 }

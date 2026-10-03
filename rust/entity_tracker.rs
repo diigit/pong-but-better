@@ -1,6 +1,5 @@
 use hecs::{Entity, World};
 use nalgebra::{Vector2, point, vector};
-use wasm_bindgen_test::console_log;
 use web_sys::js_sys::{DataView, SharedArrayBuffer};
 
 use crate::{
@@ -61,7 +60,7 @@ impl EntityTrackingSystem {
                     data_view.get_float32(BOUNDS_OFFSET),
                     data_view.get_float32(BOUNDS_OFFSET + 4)
                 ]);
-
+                
                 *mass = Mass(data_view.get_float32(MASS_OFFSET));
             }
         });
@@ -102,6 +101,7 @@ impl EntityTrackingSystem {
 
                 self.remove_entity(world, &mut data_view);
                 self.setup_entity(world, &mut data_view, ent_type.clone());
+
             }
 
             Command::RemoveEntity(index) => {
@@ -136,7 +136,7 @@ impl EntityTrackingSystem {
 
         let previous_entity_id = data_view.get_uint32(4);
         unsafe {
-            let _ = world.despawn(world.find_entity_from_id(previous_entity_id));
+            world.despawn(world.find_entity_from_id(previous_entity_id)).unwrap();
         };
 
         clear_data_view(data_view, self.entity_byte_size);

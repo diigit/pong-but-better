@@ -28,13 +28,7 @@ function setCanvas(new_canvas: HTMLCanvasElement | null) {
   }
 }
 
-const gamemaster = await new Promise((resolve) => {
-    const gamemaster = Gamemaster.create(worker, entityDataBuffer);
-
-    setTimeout(() => {
-      resolve(gamemaster)
-    }, 1000)
-})
+const gamemaster = await Gamemaster.create(worker, entityDataBuffer);
 
 export const dependencyContext = createContext({ setCanvas, gamemaster });
 createRoot(document.getElementById("root")!).render(
