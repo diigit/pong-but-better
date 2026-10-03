@@ -34,11 +34,14 @@ const BOUNDS_OFFSET = 36;
 const MASS_OFFSET = 44;
 
 let _f32_array = new Float32Array(1);
-_f32_array[0] = 3.4028235e+38;
+_f32_array[0] = 3.4028235e38;
 const F32_MAX = _f32_array[0];
 
 export class Mass {
-	constructor(public anchored = false, public value = 0) {};
+	constructor(
+		public anchored = false,
+		public value = 0,
+	) {}
 }
 
 export class Entity {
@@ -46,7 +49,11 @@ export class Entity {
 
 	public readonly collided: Evt<Entity> = new Evt();
 
-	constructor(protected view: DataView, protected _set_updated: () => void, protected _destroy: () => void = () => {}) {}
+	constructor(
+		protected view: DataView,
+		protected _set_updated: () => void,
+		protected _destroy: () => void = () => {},
+	) {}
 
 	public destroy() {
 		this.destroyed = true;
@@ -65,8 +72,8 @@ export class Entity {
 
 	get position(): Point {
 		return point(
-			this.view.getFloat32(POSITION_OFFSET), 
-			this.view.getFloat32(POSITION_OFFSET + 4)
+			this.view.getFloat32(POSITION_OFFSET),
+			this.view.getFloat32(POSITION_OFFSET + 4),
 		);
 	}
 
@@ -78,8 +85,8 @@ export class Entity {
 
 	get velocity(): Vector {
 		return vector(
-			this.view.getFloat32(VELOCITY_OFFSET), 
-			this.view.getFloat32(VELOCITY_OFFSET + 4)
+			this.view.getFloat32(VELOCITY_OFFSET),
+			this.view.getFloat32(VELOCITY_OFFSET + 4),
 		);
 	}
 
@@ -91,16 +98,16 @@ export class Entity {
 
 	get acceleration(): Vector {
 		return vector(
-			this.view.getFloat32(ACCELERATION_OFFSET), 
-			this.view.getFloat32(ACCELERATION_OFFSET + 4)
+			this.view.getFloat32(ACCELERATION_OFFSET),
+			this.view.getFloat32(ACCELERATION_OFFSET + 4),
 		);
 	}
 
 	set mass(mass: Mass) {
 		if (mass.anchored) {
-			this.view.setFloat32(MASS_OFFSET, F32_MAX) // f32 Max
+			this.view.setFloat32(MASS_OFFSET, F32_MAX); // f32 Max
 		} else {
-			this.view.setFloat32(MASS_OFFSET, mass.value) // f32 Max
+			this.view.setFloat32(MASS_OFFSET, mass.value); // f32 Max
 		}
 		this._set_updated();
 	}
@@ -122,10 +129,7 @@ export class Entity {
 	}
 
 	get bounds(): Vector {
-		return vector(
-			this.view.getFloat32(BOUNDS_OFFSET), 
-			this.view.getFloat32(BOUNDS_OFFSET + 4)
-		);
+		return vector(this.view.getFloat32(BOUNDS_OFFSET), this.view.getFloat32(BOUNDS_OFFSET + 4));
 	}
 
 	get id(): number {

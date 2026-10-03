@@ -38,7 +38,7 @@ export class BotPaddle extends Paddle {
 	constructor(view: DataView, _set_updated: () => void, _destroy: () => void) {
 		super(view, _set_updated, _destroy);
 	}
-	
+
 	set reactionTime(time: number) {
 		this.view.setFloat32(REACTION_TIME_OFFSET, time);
 		this._set_updated();

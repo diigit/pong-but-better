@@ -3,19 +3,23 @@ import { ENTITY_SIZE_BYTES } from "./constants";
 import { Entity, getDataView } from "./entities";
 
 type EntityConstructor<T extends Entity> = new (
-	view: DataView, 
-	_set_updated: () => void, 
-	_destroy: () => void
+	view: DataView,
+	_set_updated: () => void,
+	_destroy: () => void,
 ) => T;
 
 export class EntityTracker {
-	constructor(private worker: Worker, private middleman: Middleman, private buffer: SharedArrayBuffer) {
-		this.updatedView = getDataView(buffer, -1)
+	constructor(
+		private worker: Worker,
+		private middleman: Middleman,
+		private buffer: SharedArrayBuffer,
+	) {
+		this.updatedView = getDataView(buffer, -1);
 
 		worker.addEventListener("message", (event) => {
 			if (Array.isArray(event.data)) {
 				let array = event.data as Array<number>;
-				
+
 				for (let i = 0; i < array.length; i += 2) {
 					let entityI = this.getEntity(array[i]);
 					let entityJ = this.getEntity(array[i + 1]);
@@ -28,16 +32,20 @@ export class EntityTracker {
 			}
 		});
 	}
-	
+
 	createEntity<T extends Entity>(entityType: EntityConstructor<T>): Promise<T> {
 		let index = this.entities.length;
 		let dataView = getDataView(this.buffer, index);
 
-		let entity = new entityType(dataView, () => this.setUpdated(), () => {
-			this.middleman.delete_entity(index)
-		});
+		let entity = new entityType(
+			dataView,
+			() => this.setUpdated(),
+			() => {
+				this.middleman.delete_entity(index);
+			},
+		);
 
-		this.middleman.request_entity((index) * ENTITY_SIZE_BYTES, entity.entityType);
+		this.middleman.request_entity(index * ENTITY_SIZE_BYTES, entity.entityType);
 
 		this.entities[index] = entity;
 
@@ -47,9 +55,9 @@ export class EntityTracker {
 					this.worker.removeEventListener("message", listener);
 					resolve(entity as any);
 				}
-			}
-			this.worker.addEventListener("message", listener)
-		})
+			};
+			this.worker.addEventListener("message", listener);
+		});
 
 		return promise;
 	}
