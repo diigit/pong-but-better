@@ -1,8 +1,9 @@
 use hecs::{Entity, World};
-use nalgebra::{Vector2, point, vector};
+use nalgebra::{Vector2, coordinates::XYZ, point, vector};
 use web_sys::js_sys::{DataView, SharedArrayBuffer};
 
 use crate::{
+    behavior::*,
     collisions::spawn_collidable,
     movement::*,
     utils::{Command, EntityCreationParams},
@@ -15,6 +16,8 @@ const VELOCITY_OFFSET: usize = 20;
 const ACCELERATION_OFFSET: usize = 28;
 const BOUNDS_OFFSET: usize = 36;
 const MASS_OFFSET: usize = 44;
+
+pub struct EntityType(u32);
 
 pub struct EntityTrackingSystem {
     buffer: SharedArrayBuffer,
@@ -60,7 +63,7 @@ impl EntityTrackingSystem {
                     data_view.get_float32(BOUNDS_OFFSET),
                     data_view.get_float32(BOUNDS_OFFSET + 4)
                 ]);
-                
+
                 *mass = Mass(data_view.get_float32(MASS_OFFSET));
             }
         });
@@ -101,7 +104,6 @@ impl EntityTrackingSystem {
 
                 self.remove_entity(world, &mut data_view);
                 self.setup_entity(world, &mut data_view, ent_type.clone());
-
             }
 
             Command::RemoveEntity(index) => {
@@ -125,6 +127,8 @@ impl EntityTrackingSystem {
             Mass(0.0),
         );
 
+        world.insert_one(entity, EntityType(entity_type)).unwrap();
+
         data_view.set_uint32(ENTITY_ID_OFFSET, entity.id());
         data_view.set_uint32(ENTITY_TYPE_OFFSET, entity_type);
     }
@@ -136,7 +140,9 @@ impl EntityTrackingSystem {
 
         let previous_entity_id = data_view.get_uint32(4);
         unsafe {
-            world.despawn(world.find_entity_from_id(previous_entity_id)).unwrap();
+            world
+                .despawn(world.find_entity_from_id(previous_entity_id))
+                .unwrap();
         };
 
         clear_data_view(data_view, self.entity_byte_size);

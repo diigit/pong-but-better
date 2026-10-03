@@ -7,7 +7,7 @@ use web_sys::{
 };
 
 use crate::{
-    collisions::self, constants::SIMULATION_STEP_RATE, entity_tracker::EntityTrackingSystem, movement::*, render::RenderSystem, setInterval, utils::*,
+    behavior, collisions::self, constants::SIMULATION_STEP_RATE, entity_tracker::EntityTrackingSystem, movement::*, render::RenderSystem, setInterval, utils::*,
 };
 
 #[wasm_bindgen]
@@ -81,6 +81,7 @@ pub async fn run_within_worker(
 
         run_movement(&mut world, time_delta);
         collisions::run_collisions(&mut world);
+        behavior::run_behaviors(&mut world);
 
         if let Some(colliding_entities) = collisions::get_collisions(&mut world) {
             global_clone.post_message(&colliding_entities).unwrap();

@@ -9,6 +9,7 @@ mod gameplay;
 mod constants;
 mod middleman;
 mod entity_tracker;
+mod behavior;
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {

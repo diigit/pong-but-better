@@ -1,11 +1,15 @@
-import { Ctx, Evt } from "evt";
+import { Evt } from "evt";
 import {
 	BORDER_THICKNESS,
 	CANVAS_HEIGHT,
 	CANVAS_WIDTH,
+	DEFAULT_BALL_SIZE,
 	DEFAULT_PADDLE_HEIGHT,
+	DEFAULT_PADDLE_MOVE_SPEED,
 	DEFAULT_PADDLE_WIDTH,
 	DEFAULT_WINNING_SCORE,
+	DOWN_KEYS,
+	UP_KEYS,
 } from "./constants";
 import { Middleman } from "../pkg/pong_but_better";
 import { EntityTracker } from "./entity_tracker";
@@ -42,6 +46,7 @@ export class Gamemaster {
 		public readonly botPaddle: Paddle,
 		public readonly leftBoundary: Entity,
 		public readonly rightBoundary: Entity,
+		public readonly ball: Entity,
 	) {}
 
 	static async create(worker: Worker, buffer: SharedArrayBuffer): Promise<Gamemaster> {
@@ -77,20 +82,45 @@ export class Gamemaster {
 		let playerPaddle = await entityTracker.createEntity(Paddle);
 		playerPaddle.position = point(0, CANVAS_HEIGHT / 2 - DEFAULT_PADDLE_HEIGHT / 2);
 
-		return new Gamemaster(entityTracker, playerPaddle, botPaddle, leftBoundary, rightBoundary);
+		let ball = await entityTracker.createEntity(Entity);
+		ball.bounds = vector(DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE);
+		ball.position = point(
+			CANVAS_WIDTH / 2 - DEFAULT_BALL_SIZE / 2,
+			CANVAS_HEIGHT / 2 - DEFAULT_BALL_SIZE / 2,
+		);
+		ball.mass = new Mass(false, 3);
+
+		return new Gamemaster(
+			entityTracker,
+			playerPaddle,
+			botPaddle,
+			leftBoundary,
+			rightBoundary,
+			ball,
+		);
 	}
 
 	async start() {
 		this._gamemode = await DefaultGamemode.create(this);
 		this.isGameActive = true;
+
+		this.createInputListeners();
 	}
 
 	async end() {
 		this._gamemode?.destroy();
 		this.isGameActive = false;
+
+		this.deleteInputListeners();
 	}
 
-	resetBall() {}
+	resetBall() {
+		this.ball.position = point(
+			CANVAS_WIDTH / 2 - DEFAULT_BALL_SIZE / 2,
+			CANVAS_HEIGHT / 2 - DEFAULT_BALL_SIZE / 2,
+		);
+		this.ball.velocity = vector(0, 0);
+	}
 
 	get isGameActive() {
 		return this._isGameActive;
@@ -168,12 +198,48 @@ export class Gamemaster {
 	}
 
 	private createInputListeners() {
-		window.addEventListener("keydown", (event) => {});
+		this.keyUp = (event) => {
+			if (event.repeat) return;
 
-		window.addEventListener("keyup", (event) => {});
+			if (isKey(DOWN_KEYS, event)) {
+				this.playerPaddle.velocity = vector(
+					this.playerPaddle.velocity.x,
+					this.playerPaddle.velocity.y - DEFAULT_PADDLE_MOVE_SPEED,
+				);
+			} else if (isKey(UP_KEYS, event)) {
+				this.playerPaddle.velocity = vector(
+					this.playerPaddle.velocity.x,
+					this.playerPaddle.velocity.y + DEFAULT_PADDLE_MOVE_SPEED,
+				);
+			}
+		};
+		window.addEventListener("keydown", this.keyUp);
+
+		this.keyDown = (event) => {
+			if (event.repeat) return;
+
+			if (isKey(DOWN_KEYS, event)) {
+				this.playerPaddle.velocity = vector(
+					this.playerPaddle.velocity.x,
+					this.playerPaddle.velocity.y + DEFAULT_PADDLE_MOVE_SPEED,
+				);
+			} else if (isKey(UP_KEYS, event)) {
+				this.playerPaddle.velocity = vector(
+					this.playerPaddle.velocity.x,
+					this.playerPaddle.velocity.y - DEFAULT_PADDLE_MOVE_SPEED,
+				);
+			}
+		};
+		window.addEventListener("keyup", this.keyDown);
 	}
 
-	private inputCtx = new Ctx();
+	private deleteInputListeners() {
+		if (this.keyDown !== undefined) window.removeEventListener("keydown", this.keyDown);
+		if (this.keyUp !== undefined) window.removeEventListener("keyup", this.keyUp);
+	}
+
+	private keyUp: ((e: KeyboardEvent) => void) | undefined = undefined;
+	private keyDown: ((e: KeyboardEvent) => void) | undefined = undefined;
 
 	private _isGameActive = false;
 	private _selfScore: number = 0;
@@ -182,4 +248,8 @@ export class Gamemaster {
 	private _botDifficulty = BotDifficulty.Easy;
 
 	private _gamemode: DefaultGamemode | undefined = undefined;
+}
+
+function isKey(keyArray: Array<string>, event: KeyboardEvent): boolean {
+	return keyArray.find((key) => key === event.key) !== undefined;
 }
