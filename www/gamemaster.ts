@@ -3,11 +3,11 @@ import {
 	BORDER_THICKNESS,
 	CANVAS_HEIGHT,
 	CANVAS_WIDTH,
-	DEFAULT_BALL_SIZE,
-	DEFAULT_PADDLE_HEIGHT,
-	DEFAULT_PADDLE_MOVE_SPEED,
-	DEFAULT_PADDLE_WIDTH,
-	DEFAULT_WINNING_SCORE,
+	BALL_SIZE,
+	PADDLE_HEIGHT,
+	PADDLE_MOVE_SPEED,
+	PADDLE_WIDTH,
+	WINNING_SCORE,
 	DOWN_KEYS,
 	UP_KEYS,
 } from "./constants";
@@ -38,7 +38,7 @@ export class Gamemaster {
 	public readonly gamemodeChanged = Evt.create<Gamemode>();
 	public readonly botDifficultyChanged = Evt.create<BotDifficulty>();
 
-	public winningScore = DEFAULT_WINNING_SCORE;
+	public winningScore = WINNING_SCORE;
 
 	private constructor(
 		public readonly entityTracker: EntityTracker,
@@ -75,19 +75,16 @@ export class Gamemaster {
 
 		let botPaddle = await entityTracker.createEntity(BotPaddle);
 		botPaddle.position = point(
-			CANVAS_WIDTH - DEFAULT_PADDLE_WIDTH,
-			CANVAS_HEIGHT / 2 - DEFAULT_PADDLE_HEIGHT / 2,
+			CANVAS_WIDTH - PADDLE_WIDTH,
+			CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
 		);
 
 		let playerPaddle = await entityTracker.createEntity(Paddle);
-		playerPaddle.position = point(0, CANVAS_HEIGHT / 2 - DEFAULT_PADDLE_HEIGHT / 2);
+		playerPaddle.position = point(0, CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2);
 
 		let ball = await entityTracker.createEntity(Entity);
-		ball.bounds = vector(DEFAULT_BALL_SIZE, DEFAULT_BALL_SIZE);
-		ball.position = point(
-			CANVAS_WIDTH / 2 - DEFAULT_BALL_SIZE / 2,
-			CANVAS_HEIGHT / 2 - DEFAULT_BALL_SIZE / 2,
-		);
+		ball.bounds = vector(BALL_SIZE, BALL_SIZE);
+		ball.position = point(CANVAS_WIDTH / 2 - BALL_SIZE / 2, CANVAS_HEIGHT / 2 - BALL_SIZE / 2);
 		ball.mass = new Mass(false, 3);
 
 		return new Gamemaster(
@@ -100,26 +97,50 @@ export class Gamemaster {
 		);
 	}
 
-	async start() {
+	async startMatch() {
 		this._gamemode = await DefaultGamemode.create(this);
 		this.isGameActive = true;
 
+		this.createCollisionListeners();
 		this.createInputListeners();
+
+		this._gamemode.startRound();
 	}
 
-	async end() {
+	async endMatch() {
 		this._gamemode?.destroy();
 		this.isGameActive = false;
 
+		this.deleteCollisionListeners();
 		this.deleteInputListeners();
 	}
 
 	resetBall() {
 		this.ball.position = point(
-			CANVAS_WIDTH / 2 - DEFAULT_BALL_SIZE / 2,
-			CANVAS_HEIGHT / 2 - DEFAULT_BALL_SIZE / 2,
+			CANVAS_WIDTH / 2 - BALL_SIZE / 2,
+			CANVAS_HEIGHT / 2 - BALL_SIZE / 2,
 		);
 		this.ball.velocity = vector(0, 0);
+	}
+
+	async checkWin() {
+		let promise = new Promise((resolve) => {
+			this._gamemode?.endRound();
+			if (this.oppScore >= this.winningScore) {
+				// TODO
+				resolve(undefined);
+			} else if (this.selfScore >= this.winningScore ) {
+				// TODO
+				resolve(undefined);
+			} else {
+				setTimeout(() => {
+					resolve(undefined);
+					this._gamemode?.startRound();
+				}, 2000)
+			}
+		})
+
+		return promise;
 	}
 
 	get isGameActive() {
@@ -140,7 +161,6 @@ export class Gamemaster {
 	set selfScore(score: number) {
 		this._selfScore = score;
 		this.selfScoreChanged.post(score);
-		this.resetBall();
 	}
 
 	get oppScore(): number {
@@ -150,7 +170,6 @@ export class Gamemaster {
 	set oppScore(score: number) {
 		this._oppScore = score;
 		this.oppScoreChanged.post(score);
-		this.resetBall();
 	}
 
 	get gamemode() {
@@ -168,7 +187,7 @@ export class Gamemaster {
 		this.selfScore = 0;
 		this.oppScore = 0;
 
-		this.end().catch(console.error);
+		this.endMatch().catch(console.error);
 		//this._gamemode?.cleanUp();
 
 		//let gamemodeHandler;
@@ -197,6 +216,28 @@ export class Gamemaster {
 		this.botDifficultyChanged.post(newBotDifficulty);
 	}
 
+	private createCollisionListeners() {
+		this.leftBoundary.collided.attach(this.collisionsCtx, (entity) => {
+			if (this.ball != entity) return;
+		
+			this.oppScore += 1;
+			this.checkWin().catch(console.error);
+		});
+
+		this.rightBoundary.collided.attach(this.collisionsCtx, (entity) => {
+			if (this.ball != entity) return;
+
+			this.selfScore += 1;
+			this.checkWin().catch(console.error);
+		});
+	}
+
+	private deleteCollisionListeners() {
+		this.collisionsCtx.done();
+	}
+
+	private collisionsCtx = Evt.newCtx();
+
 	private createInputListeners() {
 		this.keyUp = (event) => {
 			if (event.repeat) return;
@@ -204,12 +245,12 @@ export class Gamemaster {
 			if (isKey(DOWN_KEYS, event)) {
 				this.playerPaddle.velocity = vector(
 					this.playerPaddle.velocity.x,
-					this.playerPaddle.velocity.y - DEFAULT_PADDLE_MOVE_SPEED,
+					this.playerPaddle.velocity.y - PADDLE_MOVE_SPEED,
 				);
 			} else if (isKey(UP_KEYS, event)) {
 				this.playerPaddle.velocity = vector(
 					this.playerPaddle.velocity.x,
-					this.playerPaddle.velocity.y + DEFAULT_PADDLE_MOVE_SPEED,
+					this.playerPaddle.velocity.y + PADDLE_MOVE_SPEED,
 				);
 			}
 		};
@@ -221,12 +262,12 @@ export class Gamemaster {
 			if (isKey(DOWN_KEYS, event)) {
 				this.playerPaddle.velocity = vector(
 					this.playerPaddle.velocity.x,
-					this.playerPaddle.velocity.y + DEFAULT_PADDLE_MOVE_SPEED,
+					this.playerPaddle.velocity.y + PADDLE_MOVE_SPEED,
 				);
 			} else if (isKey(UP_KEYS, event)) {
 				this.playerPaddle.velocity = vector(
 					this.playerPaddle.velocity.x,
-					this.playerPaddle.velocity.y - DEFAULT_PADDLE_MOVE_SPEED,
+					this.playerPaddle.velocity.y - PADDLE_MOVE_SPEED,
 				);
 			}
 		};

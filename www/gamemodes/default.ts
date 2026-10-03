@@ -1,22 +1,26 @@
 import { vector } from "2d-geometry";
 import type { Gamemaster } from "../gamemaster";
-import { DEFAULT_BALL_SPEED } from "../constants";
+import { BALL_SPEED } from "../constants";
 
 export class DefaultGamemode {
 	public static async create(gamemaster: Gamemaster): Promise<DefaultGamemode> {
-		gamemaster.resetBall();
-		gamemaster.ball.velocity = vector(-DEFAULT_BALL_SPEED, 0)
-
 		return new DefaultGamemode(gamemaster);
 	}
 
+	public startRound() {
+		this.gamemaster.ball.velocity = vector(-BALL_SPEED, 0)
+	}
+
+	public endRound() {
+		this.gamemaster.resetBall();
+	}
+
 	public destroy() {
+		this.endRound();
 		this.gamemaster.resetBall();
 	}
 
 	private constructor(
 		private gamemaster: Gamemaster,
-	) {
-		console.log(this.gamemaster);
-	}
+	) { }
 }

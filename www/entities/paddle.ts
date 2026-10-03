@@ -1,6 +1,6 @@
 import { vector } from "2d-geometry";
 import { Entity, Mass } from ".";
-import { DEFAULT_PADDLE_HEIGHT, DEFAULT_PADDLE_WIDTH } from "../constants";
+import { PADDLE_HEIGHT, PADDLE_WIDTH } from "../constants";
 
 // 	Paddle Layout
 
@@ -19,7 +19,7 @@ export class Paddle extends Entity {
 		super(view, _set_updated, _destroy);
 
 		this.mass = new Mass(true, 0);
-		this.bounds = vector(DEFAULT_PADDLE_WIDTH, DEFAULT_PADDLE_HEIGHT);
+		this.bounds = vector(PADDLE_WIDTH, PADDLE_HEIGHT);
 	}
 
 	set maxSpeed(maxSpeed: number) {

@@ -67,7 +67,7 @@ export function GameWindow() {
 						<button
 							type="button"
 							className="font-sans font-bold text-lg text-normal-text/80 px-4 py-1 bg-white/30 border-2 border-white/20 rounded-xl hover:bg-gray-100/30 hover:scale-110 active:scale-90 cursor-pointer transition-all text-shadow-sm"
-							onClick={() => dependencies.gamemaster.start()}
+							onClick={() => dependencies.gamemaster.startMatch()}
 						>
 							PLAY
 						</button>

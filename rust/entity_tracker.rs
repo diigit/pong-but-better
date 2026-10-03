@@ -1,9 +1,9 @@
+use deref::Deref;
 use hecs::{Entity, World};
-use nalgebra::{Vector2, coordinates::XYZ, point, vector};
+use nalgebra::{Vector2, point, vector};
 use web_sys::js_sys::{DataView, SharedArrayBuffer};
 
 use crate::{
-    behavior::*,
     collisions::spawn_collidable,
     movement::*,
     utils::{Command, EntityCreationParams},
@@ -17,7 +17,8 @@ const ACCELERATION_OFFSET: usize = 28;
 const BOUNDS_OFFSET: usize = 36;
 const MASS_OFFSET: usize = 44;
 
-pub struct EntityType(u32);
+#[derive(Deref)]
+pub struct EntityType(#[auto_ref] pub u32);
 
 pub struct EntityTrackingSystem {
     buffer: SharedArrayBuffer,
