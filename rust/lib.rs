@@ -22,6 +22,7 @@ pub fn run() -> Result<(), JsValue> {
 extern "C" {
     fn setInterval(closure: &Closure<dyn FnMut()>, millis: u32) -> f64;
     fn setTimeout(closure: &Closure<dyn FnMut()>, millis: u32) -> f64;
+    fn queueMicrotask(closure: &Closure<dyn FnMut()>);
     
     #[wasm_bindgen(js_namespace = Math)]
     fn random() -> f64;

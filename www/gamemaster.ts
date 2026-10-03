@@ -10,6 +10,7 @@ import {
 	WINNING_SCORE,
 	DOWN_KEYS,
 	UP_KEYS,
+	BALL_MASS,
 } from "./constants";
 import { Middleman } from "../pkg/pong_but_better";
 import { EntityTracker } from "./entity_tracker";
@@ -18,6 +19,18 @@ import { Entity, Mass } from "./entities";
 import { point, vector } from "2d-geometry";
 import { DefaultGamemode } from "./gamemodes/default";
 import { Ball } from "./entities/ball";
+
+const BOT_PADDLE_POSITION = point(
+	CANVAS_WIDTH - PADDLE_WIDTH,
+	CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
+);
+
+const PLAYER_PADDLE_POSITION = point(0, CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2);
+
+const BALL_CENTER_POSITION = point(
+	CANVAS_WIDTH / 2 - BALL_SIZE / 2,
+	CANVAS_HEIGHT / 2 - BALL_SIZE / 2,
+);
 
 export enum Gamemode {
 	Normal,
@@ -48,7 +61,9 @@ export class Gamemaster {
 		public readonly leftBoundary: Entity,
 		public readonly rightBoundary: Entity,
 		public readonly ball: Entity,
-	) {}
+	) {
+		this.createInputListeners();
+	}
 
 	static async create(worker: Worker, buffer: SharedArrayBuffer): Promise<Gamemaster> {
 		let middleman = Middleman.new(worker);
@@ -75,15 +90,15 @@ export class Gamemaster {
 		rightBoundary.mass = new Mass(true, 0);
 
 		let botPaddle = await entityTracker.createEntity(BotPaddle);
-		botPaddle.position = point(
-			CANVAS_WIDTH - PADDLE_WIDTH,
-			CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
-		);
+		botPaddle.position = BOT_PADDLE_POSITION;
 
 		let playerPaddle = await entityTracker.createEntity(Paddle);
-		playerPaddle.position = point(0, CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2);
+		playerPaddle.position = PLAYER_PADDLE_POSITION;
 
 		let ball = await entityTracker.createEntity(Ball);
+		ball.bounds = vector(BALL_SIZE, BALL_SIZE);
+		ball.position = BALL_CENTER_POSITION;
+		ball.mass = new Mass(false, BALL_MASS);
 
 		return new Gamemaster(
 			entityTracker,
@@ -96,11 +111,13 @@ export class Gamemaster {
 	}
 
 	async startMatch() {
+		this.oppScore = 0;
+		this.selfScore = 0;
+
 		this._gamemode = await DefaultGamemode.create(this);
 		this.isGameActive = true;
 
 		this.createCollisionListeners();
-		this.createInputListeners();
 
 		this._gamemode.startRound();
 	}
@@ -110,15 +127,19 @@ export class Gamemaster {
 		this.isGameActive = false;
 
 		this.deleteCollisionListeners();
-		this.deleteInputListeners();
+
+		console.log("match ended");
 	}
 
 	resetBall() {
-		this.ball.position = point(
-			CANVAS_WIDTH / 2 - BALL_SIZE / 2,
-			CANVAS_HEIGHT / 2 - BALL_SIZE / 2,
-		);
+		this.ball.position = BALL_CENTER_POSITION;
 		this.ball.velocity = vector(0, 0);
+
+		this.playerPaddle.position = PLAYER_PADDLE_POSITION;
+		this.playerPaddle.velocity = vector(0, 0);
+
+		this.botPaddle.position = BOT_PADDLE_POSITION;
+		this.botPaddle.velocity = vector(0, 0);
 	}
 
 	async checkWin() {
@@ -127,16 +148,16 @@ export class Gamemaster {
 			if (this.oppScore >= this.winningScore) {
 				// TODO
 				resolve(this.endMatch());
-			} else if (this.selfScore >= this.winningScore ) {
+			} else if (this.selfScore >= this.winningScore) {
 				// TODO
 				resolve(this.endMatch());
 			} else {
 				setTimeout(() => {
 					resolve(undefined);
 					this._gamemode?.startRound();
-				}, 2000)
+				}, 2000);
 			}
-		})
+		});
 
 		return promise;
 	}
@@ -217,7 +238,7 @@ export class Gamemaster {
 	private createCollisionListeners() {
 		this.leftBoundary.collided.attach(this.collisionsCtx, (entity) => {
 			if (this.ball != entity) return;
-		
+
 			this.oppScore += 1;
 			this.checkWin().catch(console.error);
 		});
@@ -232,13 +253,14 @@ export class Gamemaster {
 
 	private deleteCollisionListeners() {
 		this.collisionsCtx.done();
+		this.collisionsCtx = Evt.newCtx();
 	}
 
 	private collisionsCtx = Evt.newCtx();
 
 	private createInputListeners() {
-		this.keyUp = (event) => {
-			if (event.repeat) return;
+		window.addEventListener("keydown", (event) => {
+			if (!this.isGameActive || event.repeat) return;
 
 			if (isKey(DOWN_KEYS, event)) {
 				this.playerPaddle.velocity = vector(
@@ -251,11 +273,10 @@ export class Gamemaster {
 					this.playerPaddle.velocity.y + PADDLE_MOVE_SPEED,
 				);
 			}
-		};
-		window.addEventListener("keydown", this.keyUp);
+		});
 
-		this.keyDown = (event) => {
-			if (event.repeat) return;
+		window.addEventListener("keyup", (event) => {
+			if (!this.isGameActive || event.repeat) return;
 
 			if (isKey(DOWN_KEYS, event)) {
 				this.playerPaddle.velocity = vector(
@@ -268,17 +289,12 @@ export class Gamemaster {
 					this.playerPaddle.velocity.y - PADDLE_MOVE_SPEED,
 				);
 			}
-		};
-		window.addEventListener("keyup", this.keyDown);
-	}
+		});
 
-	private deleteInputListeners() {
-		if (this.keyDown !== undefined) window.removeEventListener("keydown", this.keyDown);
-		if (this.keyUp !== undefined) window.removeEventListener("keyup", this.keyUp);
+		window.addEventListener("focusout", () => {
+			this.playerPaddle.velocity = vector(this.playerPaddle.velocity.x, 0);
+		});
 	}
-
-	private keyUp: ((e: KeyboardEvent) => void) | undefined = undefined;
-	private keyDown: ((e: KeyboardEvent) => void) | undefined = undefined;
 
 	private _isGameActive = false;
 	private _selfScore: number = 0;

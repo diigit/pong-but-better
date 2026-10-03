@@ -3,21 +3,21 @@ use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{convert::TryFromJsValue, prelude::*};
 use web_sys::{
     DedicatedWorkerGlobalScope, MessageEvent, OffscreenCanvas,
-    js_sys::{self, Float32Array, Promise, SharedArrayBuffer, Uint16Array},
+    js_sys::{self, Float32Array, SharedArrayBuffer, Uint16Array},
 };
 
 use crate::{
-    behavior, collisions::self, constants::SIMULATION_STEP_RATE, entity_tracker::EntityTrackingSystem, movement::*, render::RenderSystem, setInterval, utils::*,
+    behavior, collisions::self, constants::SIMULATION_STEP_RATE, entity_tracker::EntityTrackingSystem, movement::*, render::RenderSystem, utils::*,
 };
 
 #[wasm_bindgen]
-pub async fn run_within_worker(
+pub fn run_within_worker(
     vertex_array: Float32Array,
     index_array: Uint16Array,
     entity_data: SharedArrayBuffer,
     entity_byte_size: usize,
     on_canvas_change: js_sys::Function,
-) {
+) -> ScopedClosure<'static, dyn FnMut()> {
     let global = js_sys::global().unchecked_into::<DedicatedWorkerGlobalScope>();
     let performance = global
         .performance()
@@ -27,7 +27,7 @@ pub async fn run_within_worker(
 
     {
         let command_buf_ref = Rc::clone(&command_buf_ref);
-        let message_handler: Closure<dyn FnMut(MessageEvent)> =
+        let message_handler: ScopedClosure<'static, dyn FnMut(MessageEvent)> =
             Closure::new(move |event: MessageEvent| {
                 if let Ok(cmd) = serde_wasm_bindgen::from_value::<Command>(event.data()) {
                     command_buf_ref.borrow_mut().push(cmd);
@@ -55,6 +55,7 @@ pub async fn run_within_worker(
     let gameplay_loop = move || {
         let time_now = performance.now();
         let time_delta = ((time_now - time_last) / 1000.0) as f32;
+        if time_delta < 1.0 / SIMULATION_STEP_RATE { return; }
         time_last = time_now;
 
         entity_tracker.write_from_buffer(&mut world);
@@ -93,14 +94,7 @@ pub async fn run_within_worker(
         triangulation_sys.run_triangulation(&mut world);
     };
 
-    let closure = Closure::new(gameplay_loop);
-
-    let forever_loop = Promise::new(&mut |_, _| {
-        setInterval(&closure, (1000.0 / SIMULATION_STEP_RATE) as u32); // two constants, never gonna be negative probably
-    });
-
     global.post_message(&JsValue::from(entity_data)).unwrap();
 
-    forever_loop.await.unwrap();
-    closure.forget();
+    return Closure::own(gameplay_loop);
 }

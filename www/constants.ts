@@ -9,8 +9,9 @@ export const BORDER_THICKNESS = 250;
 export const DOWN_KEYS = ["ArrowDown", "s"];
 export const UP_KEYS = ["ArrowUp", "w"];
 
-export const PADDLE_BALL_SKEW = 200;
-export const PADDLE_BALL_FRICTION = 0.1;
+export const PADDLE_BALL_SKEW = 250;
+export const PADDLE_BALL_FRICTION = .4;
+export const BALL_SPEED_INCREASE = 1.05;
 
 export const PADDLE_WIDTH = 16;
 export const PADDLE_HEIGHT = 64;

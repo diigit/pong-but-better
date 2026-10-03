@@ -6,7 +6,7 @@ let renderer = new Renderer();
 
 let entityData = new SharedArrayBuffer(MAX_ENTITIES * ENTITY_SIZE_BYTES + 1);
 
-run_within_worker(
+let gameStep = run_within_worker(
 	vertices,
 	indices,
 	entityData,
@@ -14,10 +14,18 @@ run_within_worker(
 	(canvas: OffscreenCanvas | undefined) => {
 		renderer.canvas = canvas;
 	},
-).catch(console.error);
+);
+
+const channel = new MessageChannel();
+channel.port1.onmessage = () => {
+	gameStep()
+	channel.port2.postMessage("message");
+}
+channel.port2.postMessage("message");
 
 function renderLoop() {
 	renderer.draw();
 	requestAnimationFrame(renderLoop);
 }
 requestAnimationFrame(renderLoop);
+
