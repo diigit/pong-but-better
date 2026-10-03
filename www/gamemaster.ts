@@ -17,6 +17,7 @@ import { BotPaddle, Paddle } from "./entities/paddle";
 import { Entity, Mass } from "./entities";
 import { point, vector } from "2d-geometry";
 import { DefaultGamemode } from "./gamemodes/default";
+import { Ball } from "./entities/ball";
 
 export enum Gamemode {
 	Normal,
@@ -82,10 +83,7 @@ export class Gamemaster {
 		let playerPaddle = await entityTracker.createEntity(Paddle);
 		playerPaddle.position = point(0, CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2);
 
-		let ball = await entityTracker.createEntity(Entity);
-		ball.bounds = vector(BALL_SIZE, BALL_SIZE);
-		ball.position = point(CANVAS_WIDTH / 2 - BALL_SIZE / 2, CANVAS_HEIGHT / 2 - BALL_SIZE / 2);
-		ball.mass = new Mass(false, 3);
+		let ball = await entityTracker.createEntity(Ball);
 
 		return new Gamemaster(
 			entityTracker,
@@ -128,10 +126,10 @@ export class Gamemaster {
 			this._gamemode?.endRound();
 			if (this.oppScore >= this.winningScore) {
 				// TODO
-				resolve(undefined);
+				resolve(this.endMatch());
 			} else if (this.selfScore >= this.winningScore ) {
 				// TODO
-				resolve(undefined);
+				resolve(this.endMatch());
 			} else {
 				setTimeout(() => {
 					resolve(undefined);

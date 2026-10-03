@@ -16,8 +16,7 @@ export class DefaultGamemode {
 	}
 
 	public destroy() {
-		this.endRound();
-		this.gamemaster.resetBall();
+		
 	}
 
 	private constructor(
