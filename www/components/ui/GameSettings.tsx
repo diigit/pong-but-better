@@ -44,7 +44,7 @@ export function GameSettings() {
 		setBotDifficulty(dependencies.gamemaster.botDifficulty);
 
 	return (
-		<div className="flex-1">
+		<div className="flex">
 			<div className="flex flex-row items-center gap-2">
 				<div className="bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl border-2 border-white/20 px-2 py-1 gap-1 m-1">
 					<p className="font-sans font-bold text-title/70 text-xs text-center">

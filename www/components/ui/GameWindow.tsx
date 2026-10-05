@@ -32,7 +32,7 @@ export function GameWindow() {
 		setGameActive(dependencies.gamemaster.isGameActive);
 
 	return (
-		<div className="flex-none flex flex-col bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl border-2 border-white/20 overflow-hidden">
+		<div className="flex flex-col bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl border-2 border-white/20 overflow-hidden">
 			<div key="top bar" className="flex flex-row px-2 py-2 bg-white/30">
 				<p
 					key="left score"
