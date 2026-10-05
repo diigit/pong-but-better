@@ -4,9 +4,8 @@ import "./style.css";
 import App from "./App.tsx";
 import "@fontsource/poppins";
 import { Gamemaster } from "./gamemaster.ts";
-import Worker from "./worker.ts?worker";
 
-let worker = new Worker();
+let worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
 
 export const entityDataBuffer: SharedArrayBuffer = await new Promise((resolve) => {
 	let listener = (event: MessageEvent) => {
