@@ -127,8 +127,6 @@ export class Gamemaster {
 		this.isGameActive = false;
 
 		this.deleteCollisionListeners();
-
-		console.log("match ended");
 	}
 
 	resetBall() {
@@ -256,44 +254,41 @@ export class Gamemaster {
 		this.collisionsCtx = Evt.newCtx();
 	}
 
+	private updatePaddleMovement() {
+		let yVel;
+
+		if (
+			!this.isGameActive ||
+			(this.inputMoveDown && this.inputMoveUp) ||
+			(!this.inputMoveDown && !this.inputMoveUp)
+		) {
+			yVel = 0;
+		} else if (this.inputMoveDown) {
+			yVel = -PADDLE_MOVE_SPEED;
+		} else if (this.inputMoveUp) {
+			yVel = PADDLE_MOVE_SPEED;
+		}
+
+		this.playerPaddle.velocity = vector(this.playerPaddle.velocity.x, yVel);
+	}
+
 	private collisionsCtx = Evt.newCtx();
 
 	private createInputListeners() {
-		window.addEventListener("keydown", (event) => {
-			if (!this.isGameActive || event.repeat) return;
+		let handleEvent = (event: KeyboardEvent, down: boolean) => {
+			if (event.repeat) return;
 
 			if (isKey(DOWN_KEYS, event)) {
-				this.playerPaddle.velocity = vector(
-					this.playerPaddle.velocity.x,
-					this.playerPaddle.velocity.y - PADDLE_MOVE_SPEED,
-				);
+				this.inputMoveDown = down;
 			} else if (isKey(UP_KEYS, event)) {
-				this.playerPaddle.velocity = vector(
-					this.playerPaddle.velocity.x,
-					this.playerPaddle.velocity.y + PADDLE_MOVE_SPEED,
-				);
-			}
-		});
+				this.inputMoveUp = down;
+			} else return;
 
-		window.addEventListener("keyup", (event) => {
-			if (!this.isGameActive || event.repeat) return;
+			this.updatePaddleMovement();
+		};
 
-			if (isKey(DOWN_KEYS, event)) {
-				this.playerPaddle.velocity = vector(
-					this.playerPaddle.velocity.x,
-					this.playerPaddle.velocity.y + PADDLE_MOVE_SPEED,
-				);
-			} else if (isKey(UP_KEYS, event)) {
-				this.playerPaddle.velocity = vector(
-					this.playerPaddle.velocity.x,
-					this.playerPaddle.velocity.y - PADDLE_MOVE_SPEED,
-				);
-			}
-		});
-
-		window.addEventListener("focusout", () => {
-			this.playerPaddle.velocity = vector(this.playerPaddle.velocity.x, 0);
-		});
+		window.addEventListener("keydown", (event) => handleEvent(event, true));
+		window.addEventListener("keyup", (event) => handleEvent(event, false));
 	}
 
 	private _isGameActive = false;
@@ -303,6 +298,9 @@ export class Gamemaster {
 	private _botDifficulty = BotDifficulty.Easy;
 
 	private _gamemode: DefaultGamemode | undefined = undefined;
+
+	private inputMoveDown = false;
+	private inputMoveUp = false;
 }
 
 function isKey(keyArray: Array<string>, event: KeyboardEvent): boolean {
