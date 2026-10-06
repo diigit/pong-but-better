@@ -6,7 +6,7 @@ use std::{
 };
 
 use hecs::{CommandBuffer, Entity, World};
-use nalgebra::Vector2;
+use nalgebra::{Vector2, vector};
 use wasm_bindgen::JsValue;
 use web_sys::js_sys::Array;
 
@@ -175,6 +175,10 @@ pub fn run_collisions(world: &mut World) {
             let mut entity_i = CollidableObject::from(result_i.unwrap());
             let mut entity_j = CollidableObject::from(result_j.unwrap());
 
+            if **entity_i.bounds == vector![0.0, 0.0] || **entity_j.bounds == vector![0.0, 0.0] {
+                continue;
+            }
+            
             if let Some(displace) = are_colliding(&entity_i, &entity_j) {
                 if entity_i.mass.is_anchored() && entity_j.mass.is_anchored() {
                     continue;

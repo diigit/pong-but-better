@@ -90,8 +90,6 @@ export class Gamemaster {
 
 		let botPaddle = await entityTracker.createEntity(BotPaddle);
 		let playerPaddle = await entityTracker.createEntity(Paddle);
-		let botPaddle2 = await entityTracker.createEntity(BotPaddle);
-		botPaddle2.position = point(BALL_CENTER_POSITION.x + 50, BALL_CENTER_POSITION.y);	
 		let ball = await entityTracker.createEntity(Ball);
 
 		return new Gamemaster(
@@ -135,7 +133,14 @@ export class Gamemaster {
 	}
 
 	async checkWin() {
+		if (this.isCheckingWin) return;
+		this.isCheckingWin = true;
+
 		let promise = new Promise((resolve) => {
+			if (!this._isGameActive) {
+				resolve(undefined);
+			}
+
 			this._gamemode?.endRound();
 			if (this.oppScore >= this.winningScore) {
 				// TODO
@@ -151,7 +156,9 @@ export class Gamemaster {
 			}
 		});
 
-		return promise;
+		return promise.then(() => {
+			this.isCheckingWin = false;
+		});
 	}
 
 	get isGameActive() {
@@ -295,6 +302,8 @@ export class Gamemaster {
 
 	private inputMoveDown = false;
 	private inputMoveUp = false;
+
+	private isCheckingWin = false;
 }
 
 function isKey(keyArray: Array<string>, event: KeyboardEvent): boolean {

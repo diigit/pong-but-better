@@ -17,7 +17,7 @@ export class Paddle extends Entity {
 
 		this.mass = new Mass(true, 0);
 		this.bounds = vector(PADDLE_WIDTH, PADDLE_HEIGHT);
-		this.position = BOT_PADDLE_POSITION;
+		this.position = PLAYER_PADDLE_POSITION;
 	}
 }
 
@@ -27,6 +27,6 @@ export class BotPaddle extends Paddle {
 	constructor(view: DataView, _destroy: () => void, _setUpdating: () => void) {
 		super(view, _destroy, _setUpdating);
 
-		this.position = PLAYER_PADDLE_POSITION;
+		this.position = BOT_PADDLE_POSITION;
 	}
 }

@@ -8,7 +8,7 @@ export class DefaultGamemode {
 	}
 
 	public startRound() {
-		this.gamemaster.ball.velocity = vector(-BALL_SPEED, 0)
+		this.gamemaster.ball.velocity = vector(BALL_SPEED * (Math.round(Math.random()) * 2 - 1), Math.random() * 10 - 20)
 	}
 
 	public endRound() {
