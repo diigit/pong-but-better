@@ -12,6 +12,8 @@ import {
 import { Paddle } from "./paddle";
 
 export class Ball extends Entity {
+	public readonly entityType: number = 4;
+
 	constructor(view: DataView, _set_updated: () => void, _destroy: () => void) {
 		super(view, _set_updated, _destroy);
 
