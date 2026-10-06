@@ -1,7 +1,9 @@
 import { dependencyContext } from "../../main";
-import { BotDifficulty, Gamemode } from "../../gamemaster";
+import { BotDifficulty, Gamemodes } from "../../gamemaster";
 import { Evt } from "evt";
 import React from "react";
+
+const ENABLE_GAMEMODE_SWITCH = false;
 
 function SettingsButton({
 	text,
@@ -23,25 +25,24 @@ function SettingsButton({
 }
 
 export function GameSettings() {
-	const dependencies = React.useContext(dependencyContext);
-	const [gamemode, setGamemode] = React.useState(Gamemode.Normal);
+	const { gamemaster } = React.useContext(dependencyContext);
+	const [gamemode, setGamemode] = React.useState(Gamemodes.Normal);
 	const [botDifficulty, setBotDifficulty] = React.useState(BotDifficulty.Easy);
 
 	React.useEffect(() => {
 		const ctx = Evt.newCtx();
 
-		dependencies.gamemaster.botDifficultyChanged.attach(ctx, setBotDifficulty);
-		dependencies.gamemaster.gamemodeChanged.attach(ctx, setGamemode);
+		gamemaster.botDifficultyChanged.attach(ctx, setBotDifficulty);
+		gamemaster.gamemodeChanged.attach(ctx, setGamemode);
 
 		return () => {
 			ctx.done();
 		};
-	}, [dependencies.gamemaster, gamemode, botDifficulty]);
+	}, [gamemaster, gamemode, botDifficulty]);
 
-	if (gamemode !== dependencies.gamemaster.gamemode)
-		setGamemode(dependencies.gamemaster.gamemode);
-	if (botDifficulty !== dependencies.gamemaster.botDifficulty)
-		setBotDifficulty(dependencies.gamemaster.botDifficulty);
+	if (gamemode !== gamemaster.getGamemode()) setGamemode(gamemaster.getGamemode());
+	if (botDifficulty !== gamemaster.getBotDifficulty())
+		setBotDifficulty(gamemaster.getBotDifficulty());
 
 	return (
 		<div className="flex">
@@ -53,62 +54,43 @@ export function GameSettings() {
 					<div className="flex flex-row gap-2 m-1">
 						<SettingsButton
 							onClick={() => {
-								dependencies.gamemaster.botDifficulty = BotDifficulty.Easy;
+								gamemaster.changeBotDifficulty(BotDifficulty.Easy);
 							}}
 							selected={botDifficulty === BotDifficulty.Easy}
 							text="Easy"
 						/>
 						<SettingsButton
 							onClick={() => {
-								dependencies.gamemaster.botDifficulty = BotDifficulty.Medium;
+								gamemaster.changeBotDifficulty(BotDifficulty.Medium);
 							}}
 							selected={botDifficulty === BotDifficulty.Medium}
 							text="Medium"
 						/>
 						<SettingsButton
 							onClick={() => {
-								dependencies.gamemaster.botDifficulty = BotDifficulty.Hard;
+								gamemaster.changeBotDifficulty(BotDifficulty.Hard);
 							}}
 							selected={botDifficulty === BotDifficulty.Hard}
 							text="Hard"
 						/>
 					</div>
 				</div>
-				<div className="bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl border-2 border-white/20 px-2 py-1 gap-1 m-1">
-					<p className="font-sans font-bold text-title/70 text-xs text-center">
-						GAMEMODES
-					</p>
-					<div className="flex flex-row gap-2 m-1">
-						<SettingsButton
-							onClick={() => {
-								dependencies.gamemaster.gamemode = Gamemode.Normal;
-							}}
-							selected={gamemode === Gamemode.Normal}
-							text="Normal"
-						/>
-						<SettingsButton
-							onClick={() => {
-								dependencies.gamemaster.gamemode = Gamemode.Obstacles;
-							}}
-							selected={gamemode === Gamemode.Obstacles}
-							text="Obstacles"
-						/>
-						<SettingsButton
-							onClick={() => {
-								dependencies.gamemaster.gamemode = Gamemode.ManyBalls;
-							}}
-							selected={gamemode === Gamemode.ManyBalls}
-							text="Too Many Balls"
-						/>
-						<SettingsButton
-							onClick={() => {
-								dependencies.gamemaster.gamemode = Gamemode.ExplodeYourPC;
-							}}
-							selected={gamemode === Gamemode.ExplodeYourPC}
-							text="Explode Your PC"
-						/>
+				{ENABLE_GAMEMODE_SWITCH ? (
+					<div className="bg-white/30 rounded-xl w-fit h-fit drop-shadow-xl border-2 border-white/20 px-2 py-1 gap-1 m-1">
+						<p className="font-sans font-bold text-title/70 text-xs text-center">
+							GAMEMODES
+						</p>
+						<div className="flex flex-row gap-2 m-1">
+							<SettingsButton
+								onClick={() => {
+									gamemaster.changeGamemode(Gamemodes.Normal);
+								}}
+								selected={gamemode === Gamemodes.Normal}
+								text="Normal"
+							/>
+						</div>
 					</div>
-				</div>
+				) : undefined}
 			</div>
 		</div>
 	);

@@ -10,6 +10,7 @@ import {
 	WINNING_SCORE,
 	DOWN_KEYS,
 	UP_KEYS,
+	BOT_DIFFICULTY,
 } from "./constants";
 import { Middleman } from "../pkg/pong_but_better";
 import { EntityTracker } from "./entity_tracker";
@@ -31,11 +32,8 @@ const BALL_CENTER_POSITION = point(
 	CANVAS_HEIGHT / 2 - BALL_SIZE / 2,
 );
 
-export enum Gamemode {
+export enum Gamemodes {
 	Normal,
-	ManyBalls,
-	Obstacles,
-	ExplodeYourPC,
 }
 
 export enum BotDifficulty {
@@ -48,7 +46,7 @@ export class Gamemaster {
 	public readonly selfScoreChanged = Evt.create<number>();
 	public readonly oppScoreChanged = Evt.create<number>();
 	public readonly gameActivityChanged = Evt.create<boolean>();
-	public readonly gamemodeChanged = Evt.create<Gamemode>();
+	public readonly gamemodeChanged = Evt.create<Gamemodes>();
 	public readonly botDifficultyChanged = Evt.create<BotDifficulty>();
 
 	public winningScore = WINNING_SCORE;
@@ -56,7 +54,7 @@ export class Gamemaster {
 	private constructor(
 		public readonly entityTracker: EntityTracker,
 		public readonly playerPaddle: Paddle,
-		public readonly botPaddle: Paddle,
+		public readonly botPaddle: BotPaddle,
 		public readonly leftBoundary: Entity,
 		public readonly rightBoundary: Entity,
 		public readonly ball: Entity,
@@ -106,16 +104,16 @@ export class Gamemaster {
 		this.oppScore = 0;
 		this.selfScore = 0;
 
-		this._gamemode = await DefaultGamemode.create(this);
+		this.gamemode = await DefaultGamemode.create(this);
 		this.isGameActive = true;
 
 		this.createCollisionListeners();
 
-		this._gamemode.startRound();
+		this.gamemode.startRound();
 	}
 
 	async endMatch() {
-		this._gamemode?.destroy();
+		this.gamemode?.destroy();
 		this.isGameActive = false;
 
 		this.deleteCollisionListeners();
@@ -141,7 +139,7 @@ export class Gamemaster {
 				resolve(undefined);
 			}
 
-			this._gamemode?.endRound();
+			this.gamemode?.endRound();
 			if (this.oppScore >= this.winningScore) {
 				// TODO
 				resolve(this.endMatch());
@@ -151,7 +149,7 @@ export class Gamemaster {
 			} else {
 				setTimeout(() => {
 					resolve(undefined);
-					this._gamemode?.startRound();
+					this.gamemode?.startRound();
 				}, 2000);
 			}
 		});
@@ -190,48 +188,46 @@ export class Gamemaster {
 		this.oppScoreChanged.post(score);
 	}
 
-	get gamemode() {
-		//return this._gamemode !== undefined ? this._gamemode.type : Gamemode.Normal;
-		return Gamemode.Normal;
+	// TODO
+	getGamemode() {
+		return Gamemodes.Normal;
 	}
 
-	set gamemode(newGamemode: Gamemode) {
-		//if (
-		//(newGamemode === Gamemode.Normal && this._gamemode === undefined) ||
-		//newGamemode === this._gamemode?.type
-		//)
-		//return;
-
+	// TODO
+	changeGamemode(newGamemode: Gamemodes) {
 		this.selfScore = 0;
 		this.oppScore = 0;
 
-		this.endMatch().catch(console.error);
-		//this._gamemode?.cleanUp();
+		this.endMatch().catch(console.error)
 
-		//let gamemodeHandler;
-		switch (newGamemode) {
-			case Gamemode.ManyBalls:
-				//gamemodeHandler = new ManyBallsGamemode(this);
-				break;
-			case Gamemode.Obstacles:
-				//gamemodeHandler = new ObstaclesGamemode(this);
-				break;
-			case Gamemode.ExplodeYourPC:
-				//gamemodeHandler = new ExplodeYourPCGamemode(this);
-				break;
-		}
-
-		//this._gamemode = gamemodeHandler;
 		this.gamemodeChanged.post(newGamemode);
 	}
 
-	get botDifficulty() {
-		return this._botDifficulty;
+	changeBotDifficulty(newDifficulty: BotDifficulty) {
+		this.botDifficulty = newDifficulty;
+		this.botDifficultyChanged.post(newDifficulty);
+
+		switch (newDifficulty) {
+			case BotDifficulty.Easy: {
+				this.botPaddle.maxSpeed = BOT_DIFFICULTY.EASY.PADDLE_MOVE_SPEED;
+				this.botPaddle.predictionTime = BOT_DIFFICULTY.EASY.PREDICTION_TIME;
+				break;
+			}
+			case BotDifficulty.Medium: {
+				this.botPaddle.maxSpeed = BOT_DIFFICULTY.MEDIUM.PADDLE_MOVE_SPEED;
+				this.botPaddle.predictionTime = BOT_DIFFICULTY.MEDIUM.PREDICTION_TIME;
+				break;
+			}
+			case BotDifficulty.Hard: {
+				this.botPaddle.maxSpeed = BOT_DIFFICULTY.HARD.PADDLE_MOVE_SPEED;
+				this.botPaddle.predictionTime = BOT_DIFFICULTY.HARD.PREDICTION_TIME;
+				break;
+			}
+		}
 	}
 
-	set botDifficulty(newBotDifficulty: BotDifficulty) {
-		this._botDifficulty = newBotDifficulty;
-		this.botDifficultyChanged.post(newBotDifficulty);
+	getBotDifficulty(): BotDifficulty {
+		return this.botDifficulty;
 	}
 
 	private createCollisionListeners() {
@@ -295,15 +291,14 @@ export class Gamemaster {
 	private _isGameActive = false;
 	private _selfScore: number = 0;
 	private _oppScore: number = 0;
-	//private _gamemode: GamemodeHandler | undefined;
-	private _botDifficulty = BotDifficulty.Easy;
 
-	private _gamemode: DefaultGamemode | undefined = undefined;
+	private gamemode: DefaultGamemode | undefined = undefined;
 
 	private inputMoveDown = false;
 	private inputMoveUp = false;
 
 	private isCheckingWin = false;
+	private botDifficulty = BotDifficulty.Easy;
 }
 
 function isKey(keyArray: Array<string>, event: KeyboardEvent): boolean {

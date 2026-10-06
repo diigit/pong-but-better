@@ -17,7 +17,7 @@ export const PADDLE_WIDTH = 8;
 export const PADDLE_HEIGHT = 64;
 export const PADDLE_EDGE_MARGIN = 0;
 
-export const ENABLE_SETTINGS = false;
+export const ENABLE_SETTINGS = true;
 
 export const PADDLE_MOVE_SPEED = 400;
 export const BALL_SPEED = 400;
