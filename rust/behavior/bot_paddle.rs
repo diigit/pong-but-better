@@ -1,14 +1,15 @@
 use core::f32;
 use nalgebra::{Point2, Vector2, vector};
+use wasm_bindgen::JsValue;
 
 use crate::{
-    behavior::Behavior,
+    behavior::{Behavior, ExtraComponent},
     entity_tracker::EntityType,
     movement::{Acceleration, Bounds, Position, Precision, Velocity},
 };
 
-const MAX_SPEED: f32 = 300.0;
-const PREDICTION_SECS: f32 = 0.3;
+pub struct MaxSpeed(f32);
+pub struct PredictionTime(f32);
 
 struct BallInfo {
     pub position: Point2<Precision>,
@@ -42,9 +43,21 @@ fn run(world: &mut hecs::World) {
             },
         );
 
-    for (EntityType(entity_type), paddle_pos, paddle_bounds, paddle_vel) in
-        world.query_mut::<(&EntityType, &Position, &Bounds, &mut Velocity)>()
-    {
+    for (
+        EntityType(entity_type),
+        paddle_pos,
+        paddle_bounds,
+        paddle_vel,
+        max_speed,
+        prediction_time,
+    ) in world.query_mut::<(
+        &EntityType,
+        &Position,
+        &Bounds,
+        &mut Velocity,
+        &MaxSpeed,
+        &PredictionTime,
+    )>() {
         if *entity_type != 3 {
             continue;
         }
@@ -62,7 +75,7 @@ fn run(world: &mut hecs::World) {
                     + (ball.acceleration * (time_ahead.powi(2))) / 2.0
             };
 
-            let ball_future = get_ball_future(PREDICTION_SECS);
+            let ball_future = get_ball_future(prediction_time.0);
 
             if (paddle_pos.x - ball_future.x) * ball.velocity.x.signum() > 0.0 {
                 // Ball is too far away
@@ -84,7 +97,7 @@ fn run(world: &mut hecs::World) {
                 if !(paddle_ball_y_offset > 0.0
                     && paddle_ball_y_offset < paddle_bounds.y - ball.bounds.y)
                 {
-                    y_vel = paddle_ball_y_offset.signum() * MAX_SPEED;
+                    y_vel = paddle_ball_y_offset.signum() * max_speed.0;
                 }
 
                 *paddle_vel = Velocity(vector!(paddle_vel.x, y_vel));
@@ -96,5 +109,29 @@ fn run(world: &mut hecs::World) {
 inventory::submit! {
     Behavior {
         run,
+    }
+}
+
+fn set_max_speed(world: &mut hecs::World, entity: hecs::Entity, value: JsValue) {
+    let value = value.as_f64().expect("Max speed was not a number!") as f32;
+    world.insert_one(entity, MaxSpeed(value)).unwrap();
+}
+
+fn set_prediction_time(world: &mut hecs::World, entity: hecs::Entity, value: JsValue) {
+    let value = value.as_f64().expect("Prediction tiem was not a number!") as f32;
+    world.insert_one(entity, PredictionTime(value)).unwrap();
+}
+
+inventory::submit! {
+    ExtraComponent {
+        name: "Max Speed",
+        add_to_entity: set_max_speed,
+    }
+}
+
+inventory::submit! {
+    ExtraComponent {
+        name: "Prediction Time",
+        add_to_entity: set_prediction_time,
     }
 }

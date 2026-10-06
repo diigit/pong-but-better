@@ -1,9 +1,11 @@
 use deref::Deref;
 use hecs::{Entity, World};
 use nalgebra::{point, vector};
+use wasm_bindgen::JsValue;
 use web_sys::js_sys::{self, DataView, Int32Array, SharedArrayBuffer};
 
 use crate::{
+    behavior::{ExtraComponentsMap, get_extra_components},
     collisions::spawn_collidable,
     movement::*,
     utils::{Command, EntityCreationParams},
@@ -24,6 +26,7 @@ pub struct EntityTrackingSystem {
     buffer: SharedArrayBuffer,
     updated: Int32Array,
     entity_byte_size: usize,
+    extra_components_map: ExtraComponentsMap,
 }
 
 impl EntityTrackingSystem {
@@ -32,6 +35,7 @@ impl EntityTrackingSystem {
             updated: Int32Array::new_with_byte_offset_and_length(&buffer, 0, 4),
             buffer,
             entity_byte_size,
+            extra_components_map: get_extra_components(),
         }
     }
 
@@ -78,13 +82,8 @@ impl EntityTrackingSystem {
                 return;
             }
 
-            if let Ok((pos, vel, acc, bounds, mass)) = world.query_one_mut::<(
-                &Position,
-                &Velocity,
-                &Acceleration,
-                &Bounds,
-                &Mass,
-            )>(entity)
+            if let Ok((pos, vel, acc, bounds, mass)) =
+                world.query_one_mut::<(&Position, &Velocity, &Acceleration, &Bounds, &Mass)>(entity)
             {
                 data_view.set_float32(POSITION_OFFSET, pos.x);
                 data_view.set_float32(POSITION_OFFSET + 4, pos.y);
@@ -106,22 +105,46 @@ impl EntityTrackingSystem {
     pub fn execute_cmd(&mut self, world: &mut World, command: &Command) {
         match command {
             Command::SetEntity(EntityCreationParams { index, ent_type }) => {
-                let mut data_view =
-                    self.get_data_view(index.clone() as usize + 1 * self.entity_byte_size);
+                let mut data_view = self.get_data_view(self.get_byte_index(*index));
 
                 self.remove_entity(world, &mut data_view);
                 self.setup_entity(world, &mut data_view, ent_type.clone());
             }
 
             Command::RemoveEntity(index) => {
-                self.remove_entity(
+                self.remove_entity(world, &mut self.get_data_view(self.get_byte_index(*index)));
+            }
+
+            Command::SetExtraComponent(params) => {
+                self.set_extra_component(
                     world,
-                    &mut self.get_data_view(index.clone() as usize + 1 * self.entity_byte_size),
+                    params.index,
+                    params.name.as_str(),
+                    params.val.clone(),
                 );
             }
 
             _ => {}
         }
+    }
+
+    fn set_extra_component(&mut self, world: &mut World, index: u32, name: &str, value: JsValue) {
+        let set_component_fn = self
+            .extra_components_map
+            .get(name)
+            .expect(format!("{} does not correspond to a component", name).as_str());
+
+        let view = self.get_data_view(self.get_byte_index(index));
+
+        if is_uninit(&view) {
+            return;
+        }
+
+        let entity_id = view.get_uint32(ENTITY_ID_OFFSET);
+
+        let entity = unsafe { world.find_entity_from_id(entity_id) };
+
+        set_component_fn(world, entity, value);
     }
 
     fn setup_entity(&self, world: &mut World, data_view: &mut DataView, entity_type: u32) {
@@ -177,6 +200,10 @@ impl EntityTrackingSystem {
 
             callback(entity, data_view, world);
         }
+    }
+
+    fn get_byte_index(&self, index: u32) -> usize {
+        return (index as usize + 1) * self.entity_byte_size;
     }
 }
 

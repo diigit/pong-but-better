@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use web_sys::Worker;
 
-use crate::utils::{Command, EntityCreationParams};
+use crate::utils::{Command, EntityCreationParams, SetExtraComponentParams};
 
 #[wasm_bindgen]
 pub struct Middleman {
@@ -24,6 +24,14 @@ impl Middleman {
 
     pub fn set_paused(&self, paused: bool) {
         self.send_command(Command::SetPaused(paused));
+    }
+
+    pub fn set_extra_component(&self, index: u32, name: String, value: JsValue) {
+        self.send_command(Command::SetExtraComponent(SetExtraComponentParams {
+            index,
+            name,
+            val: value
+        }));
     }
 
     fn send_command(&self, command: Command) {

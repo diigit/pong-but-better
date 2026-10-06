@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::JsValue;
 
 pub fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
@@ -18,8 +19,19 @@ pub struct EntityCreationParams {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SetExtraComponentParams {
+    pub index: u32,
+    pub name: String,
+
+    #[serde(with = "serde_wasm_bindgen::preserve")]
+    pub val: JsValue,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     SetPaused(bool),
     SetEntity(EntityCreationParams),
     RemoveEntity(u32),
+    SetExtraComponent(SetExtraComponentParams),
 }

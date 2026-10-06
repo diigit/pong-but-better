@@ -1,11 +1,11 @@
 import type { Middleman } from "../pkg/pong_but_better";
-import { ENTITY_SIZE_BYTES } from "./constants";
 import { Entity, getDataView } from "./entities";
 
 type EntityConstructor<T extends Entity> = new (
 	view: DataView,
 	_destroy: () => void,
 	_setUpdating: () => void,
+	_setExtraComponent: (name: string, value: any) => void,
 ) => T;
 
 export class EntityTracker {
@@ -40,7 +40,7 @@ export class EntityTracker {
 		let entityTypeVal = (entityClass as any).entityType as number;
 		if (entityTypeVal === undefined) console.error("Could not find static entity type number!");
 
-		this.middleman.request_entity(index * ENTITY_SIZE_BYTES, (entityClass as any).entityType);
+		this.middleman.request_entity(index, (entityClass as any).entityType);
 
 		let promise: Promise<T> = new Promise((resolve) => {
 			let listener = (event: MessageEvent) => {
@@ -51,6 +51,7 @@ export class EntityTracker {
 						dataView,
 						() => this.middleman.delete_entity(index),
 						() => this.setUpdating(),
+						(name, val) => this.middleman.set_extra_component(index, name, val),
 					);
 
 					this.entities[index] = entity;

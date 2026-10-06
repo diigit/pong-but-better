@@ -53,8 +53,8 @@ export abstract class Entity {
 		protected view: DataView,
 		protected _destroy: () => void = () => {},
 		protected setUpdating: () => void,
-	) {
-	}
+		protected setExtraComponent: (name: string, value: any) => void,
+	) {}
 
 	public destroy() {
 		this.destroyed = true;
@@ -152,7 +152,12 @@ export function getDataView(shared_buffer: SharedArrayBuffer, index: number): Da
 export class BaseEntity extends Entity {
 	public static readonly entityType: number = 1;
 
-	constructor(view: DataView, _destroy: () => void, _setUpdating: () => void) {
-		super(view, _destroy, _setUpdating);
+	constructor(
+		view: DataView,
+		_destroy: () => void,
+		_setUpdating: () => void,
+		setExtraComponent: (name: string, value: any) => void,
+	) {
+		super(view, _destroy, _setUpdating, setExtraComponent);
 	}
 }
