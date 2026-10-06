@@ -11,7 +11,7 @@ inventory::submit! {
     Behavior {
         run: |world| {
             for (entity_type, pos) in world.query_mut::<(&EntityType, &mut Position)>() {
-				if entity_type.0 == 2 { 
+				if entity_type.0 == 2 || entity_type.0 == 3 { 
 					// Clamp paddle position to be within bounds
 					*pos = Position(point![pos.x, clamp(pos.y, 0.0, CANVAS_HEIGHT - PADDLE_HEIGHT)]);
 				}

@@ -10,12 +10,11 @@ import {
 	WINNING_SCORE,
 	DOWN_KEYS,
 	UP_KEYS,
-	BALL_MASS,
 } from "./constants";
 import { Middleman } from "../pkg/pong_but_better";
 import { EntityTracker } from "./entity_tracker";
 import { BotPaddle, Paddle } from "./entities/paddle";
-import { Entity, Mass } from "./entities";
+import { Entity, Mass, BaseEntity } from "./entities";
 import { point, vector } from "2d-geometry";
 import { DefaultGamemode } from "./gamemodes/default";
 import { Ball } from "./entities/ball";
@@ -69,22 +68,22 @@ export class Gamemaster {
 		let middleman = Middleman.new(worker);
 		let entityTracker = new EntityTracker(worker, middleman, buffer);
 
-		let upperBoundary = await entityTracker.createEntity(Entity);
+		let upperBoundary = await entityTracker.createEntity(BaseEntity);
 		upperBoundary.position = point(0, CANVAS_HEIGHT);
 		upperBoundary.bounds = vector(CANVAS_WIDTH, BORDER_THICKNESS);
 		upperBoundary.mass = new Mass(true, 0);
 
-		let lowerBoundary = await entityTracker.createEntity(Entity);
+		let lowerBoundary = await entityTracker.createEntity(BaseEntity);
 		lowerBoundary.position = point(0, -BORDER_THICKNESS);
 		lowerBoundary.bounds = vector(CANVAS_WIDTH, BORDER_THICKNESS);
 		lowerBoundary.mass = new Mass(true, 0);
 
-		let leftBoundary = await entityTracker.createEntity(Entity);
+		let leftBoundary = await entityTracker.createEntity(BaseEntity);
 		leftBoundary.position = point(-BORDER_THICKNESS, 0);
 		leftBoundary.bounds = vector(BORDER_THICKNESS, CANVAS_HEIGHT);
 		leftBoundary.mass = new Mass(true, 0);
 
-		let rightBoundary = await entityTracker.createEntity(Entity);
+		let rightBoundary = await entityTracker.createEntity(BaseEntity);
 		rightBoundary.position = point(CANVAS_WIDTH, 0);
 		rightBoundary.bounds = vector(BORDER_THICKNESS, CANVAS_HEIGHT);
 		rightBoundary.mass = new Mass(true, 0);
@@ -96,9 +95,6 @@ export class Gamemaster {
 		playerPaddle.position = PLAYER_PADDLE_POSITION;
 
 		let ball = await entityTracker.createEntity(Ball);
-		ball.bounds = vector(BALL_SIZE, BALL_SIZE);
-		ball.position = BALL_CENTER_POSITION;
-		ball.mass = new Mass(false, BALL_MASS);
 
 		return new Gamemaster(
 			entityTracker,

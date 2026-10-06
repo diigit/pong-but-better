@@ -4,8 +4,8 @@ import { Entity, getDataView } from "./entities";
 
 type EntityConstructor<T extends Entity> = new (
 	view: DataView,
-	_set_updated: () => void,
 	_destroy: () => void,
+	_setUpdating: () => void,
 ) => T;
 
 export class EntityTracker {
@@ -14,7 +14,7 @@ export class EntityTracker {
 		private middleman: Middleman,
 		private buffer: SharedArrayBuffer,
 	) {
-		this.updatedView = getDataView(buffer, -1);
+		this.updated = new Int32Array(buffer, 0, 4);
 
 		worker.addEventListener("message", (event) => {
 			if (Array.isArray(event.data)) {
@@ -33,26 +33,28 @@ export class EntityTracker {
 		});
 	}
 
-	createEntity<T extends Entity>(entityType: EntityConstructor<T>): Promise<T> {
+	createEntity<T extends Entity>(entityClass: EntityConstructor<T>): Promise<T> {
 		let index = this.entities.length;
 		let dataView = getDataView(this.buffer, index);
 
-		let entity = new entityType(
-			dataView,
-			() => this.setUpdated(),
-			() => {
-				this.middleman.delete_entity(index);
-			},
-		);
+		let entityTypeVal = (entityClass as any).entityType as number;
+		if (entityTypeVal === undefined) console.error("Could not find static entity type number!");
 
-		this.middleman.request_entity(index * ENTITY_SIZE_BYTES, entity.entityType);
-
-		this.entities[index] = entity;
+		this.middleman.request_entity(index * ENTITY_SIZE_BYTES, (entityClass as any).entityType);
 
 		let promise: Promise<T> = new Promise((resolve) => {
 			let listener = (event: MessageEvent) => {
 				if (event.data === "entity created") {
 					this.worker.removeEventListener("message", listener);
+
+					let entity = new entityClass(
+						dataView,
+						() => this.middleman.delete_entity(index),
+						() => this.setUpdating(),
+					);
+
+					this.entities[index] = entity;
+
 					resolve(entity as any);
 				}
 			};
@@ -62,14 +64,14 @@ export class EntityTracker {
 		return promise;
 	}
 
-	setUpdated() {
-		this.updatedView.setUint8(0, 1);
+	setUpdating() {
+		Atomics.store(this.updated, 0, 1);
 	}
 
 	getEntity(id: number): Entity | undefined {
 		return this.entities.find((e) => !e.isDestroyed() && e.id === id);
 	}
 
-	private updatedView;
+	private updated;
 	private entities: Entity[] = [];
 }

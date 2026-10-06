@@ -1,5 +1,5 @@
-export const CANVAS_WIDTH = 1024;
-export const CANVAS_HEIGHT = 384;
+export const CANVAS_WIDTH = 512;
+export const CANVAS_HEIGHT = 256;
 
 export const MAX_VERTICES = 128;
 export const MAX_ENTITIES = MAX_VERTICES / 4;
@@ -9,19 +9,19 @@ export const BORDER_THICKNESS = 250;
 export const DOWN_KEYS = ["ArrowDown", "s"];
 export const UP_KEYS = ["ArrowUp", "w"];
 
-export const PADDLE_BALL_SKEW = 250;
-export const PADDLE_BALL_FRICTION = .4;
+export const PADDLE_BALL_SKEW = 150;
+export const PADDLE_BALL_FRICTION = .2;
 export const BALL_SPEED_INCREASE = 1.05;
 
-export const PADDLE_WIDTH = 16;
-export const PADDLE_HEIGHT = 64;
+export const PADDLE_WIDTH = 8;
+export const PADDLE_HEIGHT = 72;
 export const PADDLE_EDGE_MARGIN = 0;
 
 export const ENABLE_SETTINGS = false;
 
 export const PADDLE_MOVE_SPEED = 400;
-export const BALL_SPEED = 700;
-export const BALL_SIZE = 16;
+export const BALL_SPEED = 400;
+export const BALL_SIZE = 12;
 export const WINNING_SCORE = 3;
 export const BALL_MASS = 5;
 

@@ -1,7 +1,7 @@
 use deref::Deref;
 use hecs::{Entity, World};
-use nalgebra::{Vector2, point, vector};
-use web_sys::js_sys::{DataView, SharedArrayBuffer};
+use nalgebra::{point, vector};
+use web_sys::js_sys::{self, DataView, Int32Array, SharedArrayBuffer};
 
 use crate::{
     collisions::spawn_collidable,
@@ -22,14 +22,14 @@ pub struct EntityType(#[auto_ref] pub u32);
 
 pub struct EntityTrackingSystem {
     buffer: SharedArrayBuffer,
-    updated: DataView,
+    updated: Int32Array,
     entity_byte_size: usize,
 }
 
 impl EntityTrackingSystem {
     pub fn new(buffer: SharedArrayBuffer, entity_byte_size: usize) -> Self {
         Self {
-            updated: DataView::new_with_shared_array_buffer(&buffer.clone(), 0, 1),
+            updated: Int32Array::new_with_byte_offset_and_length(&buffer, 0, 4),
             buffer,
             entity_byte_size,
         }
@@ -68,17 +68,23 @@ impl EntityTrackingSystem {
                 *mass = Mass(data_view.get_float32(MASS_OFFSET));
             }
         });
+
+        js_sys::Atomics::store(&self.updated, 0, 0).unwrap();
     }
 
     pub fn update_buffer(&mut self, world: &mut World) {
-        if self.is_updated() {
-            self.set_updated(false);
-            return;
-        }
-
         self.for_each(world, &mut |entity, data_view, world| {
-            if let Ok((pos, vel, acc, bounds, mass)) =
-                world.query_one_mut::<(&Position, &Velocity, &Acceleration, &Bounds, &Mass)>(entity)
+            if js_sys::Atomics::load(&self.updated, 0).unwrap() == 1 {
+                return;
+            }
+
+            if let Ok((pos, vel, acc, bounds, mass)) = world.query_one_mut::<(
+                &Position,
+                &Velocity,
+                &Acceleration,
+                &Bounds,
+                &Mass,
+            )>(entity)
             {
                 data_view.set_float32(POSITION_OFFSET, pos.x);
                 data_view.set_float32(POSITION_OFFSET + 4, pos.y);
@@ -122,10 +128,10 @@ impl EntityTrackingSystem {
         let entity = spawn_collidable(
             world,
             Position(point![0.0, 0.0]),
-            Velocity(Vector2::zeros()),
-            Acceleration(Vector2::zeros()),
-            Bounds(Vector2::zeros()),
-            Mass(0.0),
+            Velocity(vector![0.0, 0.0]),
+            Acceleration(vector![0.0, 0.0]),
+            Bounds(vector![0.0, 0.0]),
+            Mass(f32::MAX),
         );
 
         world.insert_one(entity, EntityType(entity_type)).unwrap();
@@ -158,7 +164,7 @@ impl EntityTrackingSystem {
         F: FnMut(Entity, DataView, &mut World) -> (),
     {
         let entity_count = self.buffer.byte_length() as usize / self.entity_byte_size;
-        for index in 0..entity_count {
+        for index in 1..entity_count {
             let byte_offset = index * self.entity_byte_size;
             let data_view = self.get_data_view(byte_offset);
 
@@ -171,14 +177,6 @@ impl EntityTrackingSystem {
 
             callback(entity, data_view, world);
         }
-    }
-
-    fn is_updated(&self) -> bool {
-        self.updated.get_uint8(0) == 1
-    }
-
-    fn set_updated(&self, updated: bool) {
-        self.updated.set_uint8(0, updated as u8);
     }
 }
 

@@ -44,16 +44,17 @@ export class Mass {
 	) {}
 }
 
-export class Entity {
-	public readonly entityType: number = 1;
+export abstract class Entity {
+	public static entityType: number;
 
 	public readonly collided: Evt<Entity> = new Evt();
 
 	constructor(
 		protected view: DataView,
-		protected _set_updated: () => void,
 		protected _destroy: () => void = () => {},
-	) {}
+		protected setUpdating: () => void,
+	) {
+	}
 
 	public destroy() {
 		this.destroyed = true;
@@ -65,9 +66,10 @@ export class Entity {
 	}
 
 	set position(position: Point) {
+		this.setUpdating();
+
 		this.view.setFloat32(POSITION_OFFSET, position.x);
 		this.view.setFloat32(POSITION_OFFSET + 4, position.y);
-		this._set_updated();
 	}
 
 	get position(): Point {
@@ -78,9 +80,10 @@ export class Entity {
 	}
 
 	set velocity(velocity: Vector) {
+		this.setUpdating();
+
 		this.view.setFloat32(VELOCITY_OFFSET, velocity.x);
 		this.view.setFloat32(VELOCITY_OFFSET + 4, velocity.y);
-		this._set_updated();
 	}
 
 	get velocity(): Vector {
@@ -91,9 +94,10 @@ export class Entity {
 	}
 
 	set acceleration(acceleration: Vector) {
+		this.setUpdating();
+
 		this.view.setFloat32(ACCELERATION_OFFSET, acceleration.x);
 		this.view.setFloat32(ACCELERATION_OFFSET + 4, acceleration.y);
-		this._set_updated();
 	}
 
 	get acceleration(): Vector {
@@ -104,12 +108,13 @@ export class Entity {
 	}
 
 	set mass(mass: Mass) {
+		this.setUpdating();
+
 		if (mass.anchored) {
 			this.view.setFloat32(MASS_OFFSET, F32_MAX); // f32 Max
 		} else {
 			this.view.setFloat32(MASS_OFFSET, mass.value); // f32 Max
 		}
-		this._set_updated();
 	}
 
 	get mass(): Mass {
@@ -123,9 +128,10 @@ export class Entity {
 	}
 
 	set bounds(bounds: Vector) {
+		this.setUpdating();
+
 		this.view.setFloat32(BOUNDS_OFFSET, bounds.x);
 		this.view.setFloat32(BOUNDS_OFFSET + 4, bounds.y);
-		this._set_updated();
 	}
 
 	get bounds(): Vector {
@@ -141,4 +147,12 @@ export class Entity {
 
 export function getDataView(shared_buffer: SharedArrayBuffer, index: number): DataView {
 	return new DataView(shared_buffer, (index + 1) * ENTITY_SIZE_BYTES, ENTITY_SIZE_BYTES);
+}
+
+export class BaseEntity extends Entity {
+	public static readonly entityType: number = 1;
+
+	constructor(view: DataView, _destroy: () => void, _setUpdating: () => void) {
+		super(view, _destroy, _setUpdating);
+	}
 }

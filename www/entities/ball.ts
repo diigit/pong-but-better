@@ -12,10 +12,10 @@ import {
 import { Paddle } from "./paddle";
 
 export class Ball extends Entity {
-	public readonly entityType: number = 4;
+	public static readonly entityType: number = 4;
 
-	constructor(view: DataView, _set_updated: () => void, _destroy: () => void) {
-		super(view, _set_updated, _destroy);
+	constructor(view: DataView, _destroy: () => void, _setUpdating: () => void) {
+		super(view, _destroy, _setUpdating);
 
 		this.bounds = vector(BALL_SIZE, BALL_SIZE);
 		this.position = point(CANVAS_WIDTH / 2 - BALL_SIZE / 2, CANVAS_HEIGHT / 2 - BALL_SIZE / 2);
@@ -33,7 +33,7 @@ export class Ball extends Entity {
 					scalar * PADDLE_BALL_SKEW +
 					entity.velocity.y * PADDLE_BALL_FRICTION,
 			);
-		});
+		});	
 	}
 
 	public destroy(): void {

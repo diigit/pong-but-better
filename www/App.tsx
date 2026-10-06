@@ -4,7 +4,7 @@ import { ENABLE_SETTINGS } from "./constants";
 
 export function App() {
 	return (
-		<div className="w-screen h-screen flex flex-col items-center gap-10 p-10 justify-center">
+		<div className="w-dvw h-dvh flex flex-col items-center gap-10 p-10 justify-center">
 			<div className="flex items-center flex-col">
 				<p className="font-sans font-bold text-4xl text-title text-shadow-sm">
 					Pong, but Better

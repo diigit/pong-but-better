@@ -12,6 +12,7 @@ use crate::{
 const MAX_SPEED: f32 = 400.0;
 const PREDICTION_SECS: f32 = 0.3;
 const PADDLE_SIZE_Y: f32 = 64.0;
+const BALL_SIZE_Y: f32 = 16.0;
 
 fn run(world: &mut hecs::World) {
     let mut ball_entities = Vec::new();
@@ -42,7 +43,7 @@ fn run(world: &mut hecs::World) {
 
                     let paddle_ball_y_offset = ball_pos.y - paddle_pos.y;
                     let mut y_vel = 0.0;
-                    if !(paddle_ball_y_offset > 0.0 && paddle_ball_y_offset < PADDLE_SIZE_Y) {
+                    if !(paddle_ball_y_offset > 0.0 && paddle_ball_y_offset < PADDLE_SIZE_Y - BALL_SIZE_Y) {
                         y_vel = paddle_ball_y_offset.signum() * MAX_SPEED;
                     }
 
