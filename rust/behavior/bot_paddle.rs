@@ -2,11 +2,9 @@ use core::f32;
 
 use hecs::Entity;
 use nalgebra::vector;
-use wasm_bindgen_test::console_log;
 
 use crate::{
     behavior::Behavior,
-    constants::CANVAS_WIDTH,
     entity_tracker::EntityType,
     movement::{Position, Velocity},
 };
@@ -38,19 +36,21 @@ fn run(world: &mut hecs::World) {
             if let [Ok((paddle_pos, paddle_vel)), Ok((ball_pos, ball_vel))] =
                 world.query_disjoint_mut::<(&Position, &mut Velocity), 2>([paddle, *ball])
             {
-                if ball_vel.x.signum() == -1.0 || ball_vel.x == 0.0 {
+                if ball_vel.x.signum() != (paddle_pos.x - ball_pos.x).signum() {
+                    // Ball moving away from paddle
                     continue;
                 }
 
                 let ball_future = **ball_pos + **ball_vel * PREDICTION_SECS;
-                if ball_future.x < CANVAS_WIDTH {
+                if (paddle_pos.x - ball_future.x) * ball_vel.x.signum() > 0.0 {
+                    // Ball is too far away
                     continue;
                 }
 
                 let target_position = ball_future
                     - (vector![
-                        ball_future.x - CANVAS_WIDTH,
-                        ball_vel.y * (ball_future.x - CANVAS_WIDTH) / ball_vel.x
+                        ball_future.x - paddle_pos.x,
+                        ball_vel.y * (ball_future.x - paddle_pos.x) / ball_vel.x
                     ]);
 
                 let distance = f32::abs(paddle_pos.x - ball_pos.x);

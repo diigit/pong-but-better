@@ -89,11 +89,9 @@ export class Gamemaster {
 		rightBoundary.mass = new Mass(true, 0);
 
 		let botPaddle = await entityTracker.createEntity(BotPaddle);
-		botPaddle.position = BOT_PADDLE_POSITION;
-
 		let playerPaddle = await entityTracker.createEntity(Paddle);
-		playerPaddle.position = PLAYER_PADDLE_POSITION;
-
+		let botPaddle2 = await entityTracker.createEntity(BotPaddle);
+		botPaddle2.position = point(BALL_CENTER_POSITION.x + 50, BALL_CENTER_POSITION.y);	
 		let ball = await entityTracker.createEntity(Ball);
 
 		return new Gamemaster(
