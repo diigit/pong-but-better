@@ -2,14 +2,16 @@ use core::f32;
 
 use hecs::Entity;
 use nalgebra::vector;
+use wasm_bindgen_test::console_log;
 
 use crate::{
     behavior::Behavior,
+    constants::CANVAS_WIDTH,
     entity_tracker::EntityType,
     movement::{Position, Velocity},
 };
 
-const MAX_SPEED: f32 = 400.0;
+const MAX_SPEED: f32 = 300.0;
 const PREDICTION_SECS: f32 = 0.3;
 const PADDLE_SIZE_Y: f32 = 64.0;
 const BALL_SIZE_Y: f32 = 16.0;
@@ -36,14 +38,31 @@ fn run(world: &mut hecs::World) {
             if let [Ok((paddle_pos, paddle_vel)), Ok((ball_pos, ball_vel))] =
                 world.query_disjoint_mut::<(&Position, &mut Velocity), 2>([paddle, *ball])
             {
+                if ball_vel.x.signum() == -1.0 || ball_vel.x == 0.0 {
+                    continue;
+                }
+
                 let ball_future = **ball_pos + **ball_vel * PREDICTION_SECS;
+                if ball_future.x < CANVAS_WIDTH {
+                    continue;
+                }
 
-                if (ball_future.x - paddle_pos.x) < closest_ball_dist {
-                    closest_ball_dist = ball_future.x;
+                let target_position = ball_future
+                    - (vector![
+                        ball_future.x - CANVAS_WIDTH,
+                        ball_vel.y * (ball_future.x - CANVAS_WIDTH) / ball_vel.x
+                    ]);
 
-                    let paddle_ball_y_offset = ball_pos.y - paddle_pos.y;
+                let distance = f32::abs(paddle_pos.x - ball_pos.x);
+
+                if distance < closest_ball_dist {
+                    closest_ball_dist = distance;
+
+                    let paddle_ball_y_offset = target_position.y - paddle_pos.y;
                     let mut y_vel = 0.0;
-                    if !(paddle_ball_y_offset > 0.0 && paddle_ball_y_offset < PADDLE_SIZE_Y - BALL_SIZE_Y) {
+                    if !(paddle_ball_y_offset > 0.0
+                        && paddle_ball_y_offset < PADDLE_SIZE_Y - BALL_SIZE_Y)
+                    {
                         y_vel = paddle_ball_y_offset.signum() * MAX_SPEED;
                     }
 
