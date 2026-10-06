@@ -10,7 +10,7 @@ use crate::{
 };
 
 const MAX_SPEED: f32 = 500.0;
-const PREDICTION_SECS: f32 = 1.0;
+const PREDICTION_SECS: f32 = 0.3;
 
 fn run(world: &mut hecs::World) {
     let mut ball_entities = Vec::new();

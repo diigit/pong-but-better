@@ -3,6 +3,7 @@ import { Entity, Mass } from ".";
 import {
 	BALL_MASS,
 	BALL_SIZE,
+	BALL_SPEED_INCREASE,
 	CANVAS_HEIGHT,
 	CANVAS_WIDTH,
 	PADDLE_BALL_FRICTION,
@@ -27,7 +28,7 @@ export class Ball extends Entity {
 			const scalar = yDist / entity.bounds.y - 0.5;
 
 			this.velocity = vector(
-				this.velocity.x,// * BALL_SPEED_INCREASE,
+				this.velocity.x * BALL_SPEED_INCREASE,
 				this.velocity.y +
 					scalar * PADDLE_BALL_SKEW +
 					entity.velocity.y * PADDLE_BALL_FRICTION,
