@@ -14,7 +14,7 @@ export const PADDLE_BALL_FRICTION = .2;
 export const BALL_SPEED_INCREASE = 1.05;
 
 export const PADDLE_WIDTH = 8;
-export const PADDLE_HEIGHT = 72;
+export const PADDLE_HEIGHT = 64;
 export const PADDLE_EDGE_MARGIN = 0;
 
 export const ENABLE_SETTINGS = false;

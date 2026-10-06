@@ -9,7 +9,7 @@ use crate::{
     movement::{Acceleration, Bounds, Position, Velocity},
 };
 
-const MAX_SPEED: f32 = 500.0;
+const MAX_SPEED: f32 = 300.0;
 const PREDICTION_SECS: f32 = 0.3;
 
 fn run(world: &mut hecs::World) {
