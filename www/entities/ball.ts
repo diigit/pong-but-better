@@ -14,8 +14,13 @@ import { Paddle } from "./paddle";
 export class Ball extends Entity {
 	public static readonly entityType: number = 4;
 
-	constructor(view: DataView, _destroy: () => void, _setUpdating: () => void) {
-		super(view, _destroy, _setUpdating);
+	constructor(
+		view: DataView,
+		_destroy: () => void,
+		_setUpdating: () => void,
+		setExtraComponent: (...args: any[]) => void,
+	) {
+		super(view, _destroy, _setUpdating, setExtraComponent);
 
 		this.bounds = vector(BALL_SIZE, BALL_SIZE);
 		this.position = point(CANVAS_WIDTH / 2 - BALL_SIZE / 2, CANVAS_HEIGHT / 2 - BALL_SIZE / 2);
@@ -24,7 +29,7 @@ export class Ball extends Entity {
 		this.listener = this.collided.attach((entity) => {
 			if (!(entity instanceof Paddle)) return;
 
-			const yDist = (this.position.y + this.bounds.y / 2) - entity.position.y;
+			const yDist = this.position.y + this.bounds.y / 2 - entity.position.y;
 			const scalar = yDist / entity.bounds.y - 0.5;
 
 			this.velocity = vector(
@@ -35,7 +40,7 @@ export class Ball extends Entity {
 			);
 
 			this.acceleration = this.acceleration.multiply(-1);
-		});	
+		});
 	}
 
 	public destroy(): void {
