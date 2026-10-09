@@ -130,6 +130,7 @@ pub fn are_colliding(
 
 pub fn collide_static(displace: CollisionDisplace, adjusting_entity: &mut CollidableObject) {
     let displacement_vector = displace.vec2();
+
     adjusting_entity.position.0 += displacement_vector;
     adjusting_entity.velocity.0 += adjusting_entity
         .velocity
@@ -162,15 +163,13 @@ pub fn run_collisions(world: &mut World) {
         .without::<&IgnoreCollisions>();
     let entity_ids: Vec<Entity> = query.into_iter().map(|(e, _, _, _, _)| e).collect();
 
+    let mut view = world.view_mut::<(&mut Position, &mut Velocity, &Bounds, &Mass)>();
+
     let mut colliding_pairs = PairsSet::new();
 
     for i in 0..entity_ids.len() {
         for j in (i + 1)..entity_ids.len() {
-            let [result_i, result_j] = world
-                .query_disjoint_mut::<(&mut Position, &mut Velocity, &Bounds, &Mass), 2>([
-                    entity_ids[i],
-                    entity_ids[j],
-                ]);
+            let [result_i, result_j] = view.get_disjoint_mut::<2>([entity_ids[i], entity_ids[j]]);
 
             let mut entity_i = CollidableObject::from(result_i.unwrap());
             let mut entity_j = CollidableObject::from(result_j.unwrap());
@@ -178,7 +177,7 @@ pub fn run_collisions(world: &mut World) {
             if **entity_i.bounds == vector![0.0, 0.0] || **entity_j.bounds == vector![0.0, 0.0] {
                 continue;
             }
-            
+
             if let Some(displace) = are_colliding(&entity_i, &entity_j) {
                 if entity_i.mass.is_anchored() && entity_j.mass.is_anchored() {
                     continue;
@@ -275,7 +274,9 @@ pub fn get_collisions(world: &mut World) -> Option<Array> {
         all_pairs.add(entity_id, colliding_with.0);
     }
 
-    if all_pairs.is_empty() { return None; }
+    if all_pairs.is_empty() {
+        return None;
+    }
 
     let array: Array = Array::new();
 
