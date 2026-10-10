@@ -1,9 +1,8 @@
 <div align="center">
 	<h3 style="font-size: 30px">Pong, but Better</h3>
-	<a href="pongbutbetter.com">
+	<a href="https://pongbutbetter.com">
 		<picture>
-			<source media="(prefers-color-scheme: dark)" alt="Pong, but better logo" width="150" srcset="media/logo-dark.svg">
-			<source media="(prefers-color-scheme: light)" alt="Pong, but better logo" width="150" srcset="media/logo-light.svg">
+			<source media="(prefers-color-scheme: dark)" alt="Pong, but better logo" width="150" srcset="media/logo-light.svg">
 			<img alt="Pong, but better logo" width="100" src="media/logo-dark.svg">
 		</picture>
 		<br>
@@ -51,15 +50,10 @@ Rendering is done using ``lyon`` to tessellate the geometry into vertices and ``
 ## Results 
 *Note: Tested on Ryzen 9 9800x3D with a 3070 TI unless stated otherwise*
 - The game loop can run at most 3000 times per second before being limited by Javascript's macrotask scheduling and garbage collector runs. I've tested it running at 3000 times per second on weaker hardware (entry-level laptops) and it doesn't slow down or strain the CPU.
-- At the game loop running at 60 Hz, I'm able to simulate 1000 entities with their collisions with a negligible change in memory usage compared to the default gamemode (21.3 MB for both). Without using BVH (bounding volume hierarchy), around one million collision checks are performed per loop. With BVH, this theoretically would be reduced to mere thousands of checks. 
-<div align="center">
-	<video width="480" height="270" style="border-radius: 10px" autoplay muted playsinline loop>
-	<source src="media/Pong, but Better 1000 objects.mp4" type="video/mp4">
-	Your browser does not support the video tag.
-	</video>
-	<br/>
-	Simulating 1000 entities and their collisions at 60 FPS
-</div>
+- At the game loop running at 60 Hz, I'm able to simulate 1000 entities with their collisions with a negligible change in memory usage compared to the default gamemode (21.3 MB for both). Without using BVH (bounding volume hierarchy), around one million collision checks are performed per loop. With BVH, this theoretically would be reduced to mere thousands of checks.
+
+[Simulating 1000 entities and their collisions at 60 FPS](https://github.com/user-attachments/assets/b737dfb2-7abd-4fe2-86b6-c433348d8c79)
+<div align="center">Simulating 1000 entities and their collisions at 60 FPS</div>
 
 ## Technologies
 
