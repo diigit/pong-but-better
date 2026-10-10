@@ -278,8 +278,16 @@ export class Gamemaster {
 			if (event.repeat) return;
 
 			if (isKey(DOWN_KEYS, event)) {
+				if (this.inputMoveDown == false && down == false) {
+					this.inputMoveDown = true;
+				}
+
 				this.inputMoveDown = down;
 			} else if (isKey(UP_KEYS, event)) {
+				if (this.inputMoveUp == false && down == false) {
+					this.inputMoveUp = true;
+				}
+				
 				this.inputMoveUp = down;
 			} else return;
 
