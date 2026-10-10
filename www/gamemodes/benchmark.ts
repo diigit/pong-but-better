@@ -8,7 +8,7 @@ export class BenchmarkingGamemode extends Gamemode {
 
 	public destroy() {}
 
-	private constructor(private gamemaster: Gamemaster) {
+	private constructor(gamemaster: Gamemaster) {
 		super();
 		gamemaster.scoreTrackingEnabled = false;
 	}
