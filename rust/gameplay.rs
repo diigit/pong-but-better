@@ -8,7 +8,7 @@ use web_sys::{
 
 use crate::{
     behavior, collisions,
-    constants::SIMULATION_STEP_RATE,
+    constants::{SIMULATION_STEP_RATE},
     entity_tracker::EntityTrackingSystem,
     movement::*,
     render::RenderSystem,

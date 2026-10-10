@@ -2,9 +2,9 @@
 	<h3 style="font-size: 30px">Pong, but Better</h3>
 	<a href="pongbutbetter.com">
 		<picture>
-			<source media="(prefers-color-scheme: dark)" alt="Pong, but better logo" width="150" srcset="img/logo-dark.svg">
-			<source media="(prefers-color-scheme: light)" alt="Pong, but better logo" width="150" srcset="img/logo-light.svg">
-			<img alt="Pong, but better logo" width="100" src="img/logo-dark.svg">
+			<source media="(prefers-color-scheme: dark)" alt="Pong, but better logo" width="150" srcset="media/logo-dark.svg">
+			<source media="(prefers-color-scheme: light)" alt="Pong, but better logo" width="150" srcset="media/logo-light.svg">
+			<img alt="Pong, but better logo" width="100" src="media/logo-dark.svg">
 		</picture>
 		<br>
 		<h3><strong><u>Try it out</u></strong></h3>
@@ -15,7 +15,9 @@
 
 Pong, but Better is a showcase of an experimental game engine made from scratch. Using modern technologies such as WebAssembly and Web Workers, this aims to outperform legacy web game engines in both ease-of-use and raw performance. Currently, it is an early prototype and is only meant as a development showcase.
 
-<div align="center"><img alt="Pong, but better screenshot" style="border-radius: 5px" src="img/game_screenshot.webp" width="400"></div>
+<div align="center">
+	<img alt="Pong, but better screenshot" style="border-radius: 10px" src="media/game_screenshot.webp" width="400">
+</div>
 
 ## Structure
 The game engine is made in two seperate parts: the Typescript side and the WASM/Rust side. 
@@ -46,18 +48,30 @@ At the start of every game loop, the WASM side will copy the entity data from th
 
 Rendering is done using ``lyon`` to tessellate the geometry into vertices and ``wgpu`` to draw those vertices on an ``OffscreenCanvas``. It's done on the worker thread to make sharing the vertex and index buffers easy. I plan on also only tessellating the geometry before each frame, but this is relatively low-priority relative to other changes I can make.
 
-## Results
-
-- The game loop can run at most 3000 times per second before being limited by Javascript's macrotask scheduling and garbage collector runs. The loop itself usually takes around 25 microseconds on my 9800x3D. I've tested it running at 3000 times per second on weaker hardware (entry-level laptops) and it doesn't slow down or strain the CPU.
-- **TODO** Benchmark the amount of moving and colliding entities compared to the performance of the game.
+## Results 
+*Note: Tested on Ryzen 9 9800x3D with a 3070 TI unless stated otherwise*
+- The game loop can run at most 3000 times per second before being limited by Javascript's macrotask scheduling and garbage collector runs. I've tested it running at 3000 times per second on weaker hardware (entry-level laptops) and it doesn't slow down or strain the CPU.
+- At the game loop running at 60 Hz, I'm able to simulate 1000 entities with their collisions with a negligible change in memory usage compared to the default gamemode (21.3 MB for both). Without using BVH (bounding volume hierarchy), around one million collision checks are performed per loop. With BVH, this theoretically would be reduced to mere thousands of checks. 
+<div align="center">
+	<video width="480" height="270" style="border-radius: 10px" autoplay muted playsinline loop>
+	<source src="media/Pong, but Better 1000 objects.mp4" type="video/mp4">
+	Your browser does not support the video tag.
+	</video>
+	<br/>
+	Simulating 1000 entities and their collisions at 60 FPS
+</div>
 
 ## Technologies
 
-
-
 ### Used
 
-- One
-- Two
+- ECS: Allows extremely efficient iteration over components. Gives the compiler a chance to exploit SIMD instructions when, for example, calculating movement.
+- WASM: At the tradeoff of slightly higher page size and more difficult communcation to Typescript, memory usage and execution speed are greatly increased.
+- Rust: Has a good WASM ecosystem and ensures memory safety at small memory sizes.
+- wgpu: Control over vertex and index buffers allows for minimal overhead when copying entity vertex and index data to GPU buffers.
 
 ### Planned
+
+- BVH (Bounding volume hierarchy): Check collisions with logarithmic or worst case linear time instead of quadratic time. This is the highest priority optimization because, at 1000 entities, collision checks would be reduced from around one million to a few thousand.
+- Z-ordering: With Z-ordering, the BVH would be constructed efficiently because it naturally orders entities by their proximity. 
+- Rotation & Colors: Essential features forany game engine.
