@@ -4,6 +4,7 @@ import { run_within_worker } from "../pkg/pong_but_better";
 
 let entityData = new SharedArrayBuffer(MAX_ENTITIES * ENTITY_SIZE_BYTES + 1);
 let renderer = await Renderer.Create();
+let animationFrameScheduled = new Uint16Array(1);
 
 let gameStep = run_within_worker(
 	vertices,
@@ -13,6 +14,8 @@ let gameStep = run_within_worker(
 	(canvas: OffscreenCanvas | undefined) => {
 		renderer.canvas = canvas;
 	},
+	() => renderer.draw(),
+	animationFrameScheduled,
 );
 
 const channel = new MessageChannel();
@@ -23,7 +26,7 @@ channel.port1.onmessage = () => {
 channel.port2.postMessage("message");
 
 function renderLoop() {
-	renderer.draw();
+	animationFrameScheduled[0] = 1;
 	requestAnimationFrame(renderLoop);
 }
 requestAnimationFrame(renderLoop);

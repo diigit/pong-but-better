@@ -7,7 +7,12 @@ use web_sys::{
 };
 
 use crate::{
-    behavior, collisions::self, constants::SIMULATION_STEP_RATE, entity_tracker::EntityTrackingSystem, movement::*, render::RenderSystem, utils::*,
+    behavior, collisions,
+    constants::SIMULATION_STEP_RATE,
+    entity_tracker::EntityTrackingSystem,
+    movement::*,
+    render::RenderSystem,
+    utils::*,
 };
 
 #[wasm_bindgen]
@@ -17,6 +22,8 @@ pub fn run_within_worker(
     entity_data: SharedArrayBuffer,
     entity_byte_size: usize,
     on_canvas_change: js_sys::Function,
+    render_canvas: js_sys::Function,
+    animation_frame_scheduled: Uint16Array,
 ) -> ScopedClosure<'static, dyn FnMut()> {
     let global = js_sys::global().unchecked_into::<DedicatedWorkerGlobalScope>();
     let performance = global
@@ -44,18 +51,20 @@ pub fn run_within_worker(
 
         message_handler.forget();
     }
-    
+
     let global_clone = global.clone();
     let mut world = World::new();
 
     let mut triangulation_sys = RenderSystem::new(vertex_array, index_array);
     let mut entity_tracker = EntityTrackingSystem::new(entity_data.clone(), entity_byte_size);
-    
+
     let mut time_last = performance.now();
     let gameplay_loop = move || {
         let time_now = performance.now();
         let time_delta = ((time_now - time_last) / 1000.0) as f32;
-        if time_delta < 1.0 / SIMULATION_STEP_RATE { return; }
+        if time_delta < 1.0 / SIMULATION_STEP_RATE {
+            return;
+        }
         time_last = time_now;
 
         entity_tracker.write_from_buffer(&mut world);
@@ -90,8 +99,11 @@ pub fn run_within_worker(
 
         entity_tracker.update_buffer(&mut world);
 
-        // TODO: not run this every game step, rather run it before every render.
-        triangulation_sys.run_triangulation(&mut world);
+        if animation_frame_scheduled.get_index(0) == 1 {
+            animation_frame_scheduled.set_index(0, 0);
+            triangulation_sys.run_triangulation(&mut world);
+            render_canvas.call0(&JsValue::null()).unwrap();
+        }
     };
 
     global.post_message(&JsValue::from(entity_data)).unwrap();

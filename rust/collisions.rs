@@ -87,6 +87,13 @@ impl CollisionDisplace {
         }
     }
 
+    pub fn axis_vec2(&self) -> Vector2<Precision> {
+        match self.axis {
+            Axis::X => Vector2::x(),
+            Axis::Y => Vector2::y(),
+        }
+    }
+
     pub fn negative(&self) -> Self {
         let mut clone = self.clone();
         clone.displace = -clone.displace;
@@ -111,7 +118,7 @@ pub fn are_colliding(
         let bj1 = entity_j.position[dim];
         let bj2 = entity_j.position[dim] + entity_j.bounds[dim];
 
-        if (bi2 < bj1) || (bi1 > bj2) {
+        if (bi2 <= bj1) || (bi1 >= bj2) {
             return None;
         }
 
@@ -134,7 +141,7 @@ pub fn collide_static(displace: CollisionDisplace, adjusting_entity: &mut Collid
     adjusting_entity.position.0 += displacement_vector;
     adjusting_entity.velocity.0 += adjusting_entity
         .velocity
-        .component_mul(&-(2.0 * displacement_vector.abs() / displacement_vector.magnitude()));
+        .component_mul(&-(2.0 * displace.axis_vec2()));
 }
 
 pub fn collide(
@@ -153,6 +160,12 @@ pub fn collide(
     let vel_i = (mass_i - mass_j) * r * init_vel_i + 2.0 * mass_j * r * init_vel_j;
     let vel_j = (mass_j - mass_i) * r * init_vel_j + 2.0 * mass_i * r * init_vel_i;
 
+    if mass_i > mass_j {
+        entity_j.position.0 += displace.vec2();
+    } else {
+        entity_i.position.0 -= displace.vec2();
+    }
+
     entity_i.velocity[displace.dim()] = vel_i;
     entity_j.velocity[displace.dim()] = vel_j;
 }
@@ -161,6 +174,7 @@ pub fn run_collisions(world: &mut World) {
     let query = world
         .query_mut::<(Entity, &mut Position, &mut Velocity, &Bounds, &Mass)>()
         .without::<&IgnoreCollisions>();
+
     let entity_ids: Vec<Entity> = query.into_iter().map(|(e, _, _, _, _)| e).collect();
 
     let mut view = world.view_mut::<(&mut Position, &mut Velocity, &Bounds, &Mass)>();

@@ -1,8 +1,9 @@
-import { MAX_VERTICES } from "./constants";
 import shader from "../shader.wgsl?raw";
+import { MAX_ENTITIES } from "./constants";
 
+const MAX_VERTICES = MAX_ENTITIES * 4;
 export const vertices = new Float32Array(MAX_VERTICES * 2);
-export const indices = new Uint16Array(MAX_VERTICES);
+export const indices = new Uint16Array(MAX_VERTICES * 2);
 
 let canvasFormat = navigator.gpu.getPreferredCanvasFormat()
 
@@ -22,7 +23,7 @@ export class Renderer {
 
 		let indexBuffer = device.createBuffer({
 			label: "Index buffer",
-			size: MAX_VERTICES * 2,
+			size: MAX_VERTICES * 2 * 2,
 			usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
 		});
 
@@ -80,7 +81,7 @@ export class Renderer {
 	) {}
 
 	draw() {
-		if (this.context === undefined) return;
+		if (this.context === undefined) return;		
 
 		const encoder = this.device.createCommandEncoder();
 
@@ -101,7 +102,7 @@ export class Renderer {
 		renderPass.setPipeline(this.renderPipeline);
 		renderPass.setVertexBuffer(0, this.vertexBuffer);
 		renderPass.setIndexBuffer(this.indexBuffer, "uint16");
-		renderPass.drawIndexed(MAX_VERTICES, 1);
+		renderPass.drawIndexed(MAX_VERTICES * 2, 1);
 		renderPass.end();
 
 		this.device.queue.submit([encoder.finish()]);

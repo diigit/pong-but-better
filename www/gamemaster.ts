@@ -34,6 +34,7 @@ const BALL_CENTER_POSITION = point(
 
 export enum Gamemodes {
 	Normal,
+	Benchmark,
 }
 
 export enum BotDifficulty {
@@ -50,6 +51,7 @@ export class Gamemaster {
 	public readonly botDifficultyChanged = Evt.create<BotDifficulty>();
 
 	public winningScore = WINNING_SCORE;
+	public scoreTrackingEnabled = true;
 
 	private constructor(
 		public readonly entityTracker: EntityTracker,
@@ -100,11 +102,11 @@ export class Gamemaster {
 		);
 	}
 
-	async startMatch() {
+	startMatch() {
 		this.oppScore = 0;
 		this.selfScore = 0;
 
-		this.gamemode = await DefaultGamemode.create(this);
+		this.gamemode = new DefaultGamemode(this);
 		this.isGameActive = true;
 
 		this.createCollisionListeners();
@@ -112,7 +114,7 @@ export class Gamemaster {
 		this.gamemode.startRound();
 	}
 
-	async endMatch() {
+	endMatch() {
 		this.gamemode?.destroy();
 		this.isGameActive = false;
 
@@ -198,7 +200,7 @@ export class Gamemaster {
 		this.selfScore = 0;
 		this.oppScore = 0;
 
-		this.endMatch().catch(console.error)
+		this.endMatch();
 
 		this.gamemodeChanged.post(newGamemode);
 	}
@@ -232,14 +234,14 @@ export class Gamemaster {
 
 	private createCollisionListeners() {
 		this.leftBoundary.collided.attach(this.collisionsCtx, (entity) => {
-			if (this.ball != entity) return;
+			if (this.ball != entity || !this.scoreTrackingEnabled) return;
 
 			this.oppScore += 1;
 			this.checkWin().catch(console.error);
 		});
 
 		this.rightBoundary.collided.attach(this.collisionsCtx, (entity) => {
-			if (this.ball != entity) return;
+			if (this.ball != entity || !this.scoreTrackingEnabled) return;
 
 			this.selfScore += 1;
 			this.checkWin().catch(console.error);

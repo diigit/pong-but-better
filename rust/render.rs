@@ -3,8 +3,8 @@ use lyon::geom::euclid::Point2D;
 use lyon::geom::euclid::UnknownUnit;
 use lyon::tessellation::*;
 use nalgebra::{point, vector};
+use web_sys::js_sys::Float32Array;
 use web_sys::js_sys::Uint16Array;
-use web_sys::js_sys::{Float32Array};
 
 use crate::constants;
 use crate::{
@@ -85,7 +85,7 @@ impl SharedBuffer {
     }
 
     pub fn push_point(&mut self, point: Point2D<Precision, UnknownUnit>) -> VertexId {
-        let id = self.vertices_len/2;
+        let id = self.vertices_len / 2;
         let index = (self.vertices_len) as u32;
         self.vertices.set_index(index, point.x);
         self.vertices.set_index(index + 1, point.y);

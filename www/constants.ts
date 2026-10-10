@@ -1,10 +1,9 @@
 export const CANVAS_WIDTH = 512;
 export const CANVAS_HEIGHT = 256;
 
-export const MAX_VERTICES = 128;
-export const MAX_ENTITIES = MAX_VERTICES / 4;
+export const MAX_ENTITIES = 128;
 export const ENTITY_SIZE_BYTES = 64;
-export const BORDER_THICKNESS = 250;
+export const BORDER_THICKNESS = 1000;
 
 export const DOWN_KEYS = ["ArrowDown", "s"];
 export const UP_KEYS = ["ArrowUp", "w"];
