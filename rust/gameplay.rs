@@ -7,12 +7,7 @@ use web_sys::{
 };
 
 use crate::{
-    behavior, collisions,
-    constants::{SIMULATION_STEP_RATE},
-    entity_tracker::EntityTrackingSystem,
-    movement::*,
-    render::RenderSystem,
-    utils::*,
+    behavior, collisions, constants::{SIMULATION_STEP_RATE}, entity_tracker::EntityTrackingSystem, movement::*, render::RenderSystem, utils::*,
 };
 
 #[wasm_bindgen]
@@ -57,6 +52,45 @@ pub fn run_within_worker(
 
     let mut triangulation_sys = RenderSystem::new(vertex_array, index_array);
     let mut entity_tracker = EntityTrackingSystem::new(entity_data.clone(), entity_byte_size);
+
+    // BENCHMARK
+    /*
+    {
+        const COLUMNS: u32 = 150;
+        const ROWS: u32 = 12;
+        const PARTICLE_SIZE: f32 = 3.0;
+        const PADDING: f32 = 0.0;
+
+        let origin = point![
+            CANVAS_WIDTH / 2.0
+                - PARTICLE_SIZE / 2.0
+                - COLUMNS as f32 * (PARTICLE_SIZE + PADDING) / 2.0,
+            CANVAS_HEIGHT / 2.0
+                - PARTICLE_SIZE / 2.0
+                - ROWS as f32 * (PARTICLE_SIZE + PADDING) / 2.0,
+        ];
+
+        world.spawn_batch((0..COLUMNS * ROWS).map(|i| {
+            let row = i / COLUMNS;
+            let column = i % COLUMNS;
+            console_log!("{} {}", row, column);
+
+            let position = origin
+                + vector![
+                    column as f32 * (PARTICLE_SIZE + PADDING),
+                    row as f32 * (PARTICLE_SIZE + PADDING)
+                ];
+
+            (
+                Position(position),
+                Velocity(vector![0.0, 0.0]),
+                Acceleration(vector![0.0, -900.0]),
+                Bounds(vector![PARTICLE_SIZE, PARTICLE_SIZE]),
+                Mass(1.0),
+                Shape::AxisAlignedBox,
+            )
+        }));
+    }*/
 
     let mut time_last = performance.now();
     let gameplay_loop = move || {

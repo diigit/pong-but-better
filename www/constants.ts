@@ -1,7 +1,7 @@
 export const CANVAS_WIDTH = 512;
 export const CANVAS_HEIGHT = 256;
 
-export const MAX_ENTITIES = 128;
+export const MAX_ENTITIES = 2048;
 export const ENTITY_SIZE_BYTES = 64;
 export const BORDER_THICKNESS = 1000;
 

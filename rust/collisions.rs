@@ -1,11 +1,18 @@
 extern crate nalgebra as na;
 
+use std::collections::{HashMap, HashSet};
+
 use hecs::{CommandBuffer, Entity, World};
-use nalgebra::{Vector2, vector};
+use nalgebra::{Vector2};
 use wasm_bindgen::JsValue;
 use web_sys::js_sys::Array;
 
-use crate::{movement::*, shapes::Shape, utils::PairsSet};
+use crate::{
+    bvh::{BoundingBox, BoundingVolumeHierarchy},
+    movement::*,
+    shapes::Shape,
+    utils::{sorted_entities_tuple},
+};
 
 #[derive(Debug)]
 pub struct CollidingWith(pub Entity);
@@ -33,7 +40,6 @@ pub fn spawn_collidable(
 pub struct CollidableObject<'a> {
     pub position: &'a mut Position,
     pub velocity: &'a mut Velocity,
-    pub bounds: &'a Bounds,
     pub mass: &'a Mass,
 }
 
@@ -42,7 +48,6 @@ impl<'a> From<(&'a mut Position, &'a mut Velocity, &'a Bounds, &'a Mass)> for Co
         Self {
             position: t.0,
             velocity: t.1,
-            bounds: t.2,
             mass: t.3,
         }
     }
@@ -103,15 +108,21 @@ impl CollisionDisplace {
     }
 }
 
+pub type CollidableComponentsMut<'a> =
+    hecs::Without<(&'a mut Position, &'a mut Velocity, &'a Bounds, &'a Mass), &'a IgnoreCollisions>;
+
+pub type CollidableComponents<'a> =
+    hecs::Without<(&'a Position, &'a Velocity, &'a Bounds, &'a Mass), &'a IgnoreCollisions>;
+
 pub fn are_colliding(
-    entity_i: &CollidableObject,
-    entity_j: &CollidableObject,
+    bounding_box_i: &BoundingBox,
+    bounding_box_j: &BoundingBox,
 ) -> Option<CollisionDisplace> {
     let get_move = |dim: usize| {
-        let bi1 = entity_i.position[dim];
-        let bi2 = entity_i.position[dim] + entity_i.bounds[dim];
-        let bj1 = entity_j.position[dim];
-        let bj2 = entity_j.position[dim] + entity_j.bounds[dim];
+        let bi1 = bounding_box_i.min[dim];
+        let bi2 = bounding_box_i.max[dim];
+        let bj1 = bounding_box_j.min[dim];
+        let bj2 = bounding_box_j.max[dim];
 
         if (bi2 <= bj1) || (bi1 >= bj2) {
             return None;
@@ -166,41 +177,51 @@ pub fn collide(
 }
 
 pub fn run_collisions(world: &mut World) {
-    let query = world
-        .query_mut::<(Entity, &mut Position, &mut Velocity, &Bounds, &Mass)>()
-        .without::<&IgnoreCollisions>();
+    let mut collisions_by_entity = HashMap::new();
 
-    let entity_ids: Vec<Entity> = query.into_iter().map(|(e, _, _, _, _)| e).collect();
+    let mut entities: Vec<Entity> = world
+        .query_mut::<Entity>()
+        .with::<(&Position, &Velocity, &Bounds, &Mass)>()
+        .without::<&IgnoreCollisions>()
+        .into_iter()
+        .collect();
 
-    let mut view = world.view_mut::<(&mut Position, &mut Velocity, &Bounds, &Mass)>();
+    let mut bvh = BoundingVolumeHierarchy::sort_entities_and_new(world, &mut entities);
+    let view = world.view_mut::<CollidableComponents>();
 
-    let mut colliding_pairs = PairsSet::new();
+    for entity_i in entities.iter() {
+        let colliding = bvh.get_colliding(&entity_i, &entities, &view);
+        collisions_by_entity.insert(*entity_i, colliding);
+    }
 
-    for i in 0..entity_ids.len() {
-        for j in (i + 1)..entity_ids.len() {
-            let [result_i, result_j] = view.get_disjoint_mut::<2>([entity_ids[i], entity_ids[j]]);
+    let mut mutable_view = world.view_mut::<CollidableComponentsMut>();
+    let mut colliding_pairs = HashSet::new();
 
-            let mut entity_i = CollidableObject::from(result_i.unwrap());
-            let mut entity_j = CollidableObject::from(result_j.unwrap());
+    for (entity_i, collisions) in collisions_by_entity {
+        for (entity_j, displace) in collisions {
+            let tuple = sorted_entities_tuple(entity_i, entity_j);
 
-            if **entity_i.bounds == vector![0.0, 0.0] || **entity_j.bounds == vector![0.0, 0.0] {
+            if colliding_pairs.contains(&tuple) {
                 continue;
             }
 
-            if let Some(displace) = are_colliding(&entity_i, &entity_j) {
-                if entity_i.mass.is_anchored() && entity_j.mass.is_anchored() {
-                    continue;
-                }
+            colliding_pairs.insert(tuple);
 
-                if entity_i.mass.is_anchored() {
-                    collide_static(displace, &mut entity_j);
-                } else if entity_j.mass.is_anchored() {
-                    collide_static(displace.negative(), &mut entity_i);
-                } else {
-                    collide(displace, &mut entity_i, &mut entity_j);
-                }
+            let [result_i, result_j] = mutable_view.get_disjoint_mut::<2>([entity_i, entity_j]);
 
-                colliding_pairs.add(entity_ids[i], entity_ids[j]);
+            let mut collidable_obj_i = CollidableObject::from(result_i.unwrap());
+            let mut collidable_obj_j = CollidableObject::from(result_j.unwrap());
+
+            if collidable_obj_i.mass.is_anchored() && collidable_obj_j.mass.is_anchored() {
+                continue;
+            }
+
+            if collidable_obj_i.mass.is_anchored() {
+                collide_static(displace, &mut collidable_obj_j);
+            } else if collidable_obj_j.mass.is_anchored() {
+                collide_static(displace.negative(), &mut collidable_obj_i);
+            } else {
+                collide(displace, &mut collidable_obj_i, &mut collidable_obj_j);
             }
         }
     }
@@ -208,7 +229,7 @@ pub fn run_collisions(world: &mut World) {
     let mut world_command_buffer = CommandBuffer::new();
 
     for (entity_id, colliding_with) in world.query_mut::<(Entity, &CollidingWith)>() {
-        if !colliding_pairs.remove(entity_id, colliding_with.0) {
+        if !colliding_pairs.remove(&sorted_entities_tuple(entity_id, colliding_with.0)) {
             world_command_buffer.remove_one::<CollidingWith>(entity_id);
         }
     }
@@ -222,10 +243,10 @@ pub fn run_collisions(world: &mut World) {
 }
 
 pub fn get_collisions(world: &mut World) -> Option<Array> {
-    let mut all_pairs = PairsSet::new();
+    let mut all_pairs = HashSet::new();
 
     for (entity_id, colliding_with) in world.query_mut::<(Entity, &CollidingWith)>() {
-        all_pairs.add(entity_id, colliding_with.0);
+        all_pairs.insert(sorted_entities_tuple(entity_id, colliding_with.0));
     }
 
     if all_pairs.is_empty() {

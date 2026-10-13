@@ -10,6 +10,7 @@ mod constants;
 mod middleman;
 mod entity_tracker;
 mod behavior;
+mod bvh;
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {
