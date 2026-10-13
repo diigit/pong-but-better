@@ -18,7 +18,19 @@ Pong, but Better is a showcase of an experimental game engine made from scratch.
 	<img alt="Pong, but better screenshot" style="border-radius: 10px" src="media/game_screenshot.webp" width="400">
 </div>
 
-## Structure
+## How it was made
+
+### Technologies Used
+
+- ECS: Allows extremely efficient iteration over components. Gives the compiler a chance to exploit SIMD instructions when, for example, calculating movement.
+- WASM: At the tradeoff of slightly higher page size and more difficult communcation to Typescript, memory usage and execution speed are greatly increased.
+- Rust: Has a good WASM ecosystem and ensures memory safety at small memory sizes.
+- wgpu: Control over vertex and index buffers allows for minimal overhead when copying entity vertex and index data to GPU buffers.
+- BVH (Bounding volume hierarchy): Check collisions with logarithmic or worst case linear time instead of quadratic time. This is the highest priority optimization because, at 1000 entities, collision checks would be reduced from around one million to a few thousand.
+- Z-ordering: With Z-ordering, the BVH would be constructed efficiently because it naturally orders entities by their proximity. 
+
+### Structure
+
 The game engine is made in two seperate parts: the Typescript side and the WASM/Rust side. 
 
 |Property|WASM|Typescript|
@@ -35,7 +47,7 @@ The general pattern for allowing the Typescript side to communicate with the WAS
 
 #### Command Buffer
 
-The WASM side listens for messages with the Web Worker API. If the message is a command (sent using ``middleman.rs``), it'll deserialize the command and add it to the command buffer. Commands within the command buffer are then read at a certain point in the game loop and propogated to the appropriate resources. 
+The WASM side listens for messages with the Web Worker API. If the message is a co
 
 #### Shared Array Buffer (Entity Tracker)
 
@@ -50,22 +62,13 @@ Rendering is done using ``lyon`` to tessellate the geometry into vertices and ``
 ## Results 
 *Note: Tested on Ryzen 9 9800x3D with a 3070 TI unless stated otherwise*
 - The game loop can run at most 3000 times per second before being limited by Javascript's macrotask scheduling and garbage collector runs. I've tested it running at 3000 times per second on weaker hardware (entry-level laptops) and it doesn't slow down or strain the CPU.
-- At the game loop running at 60 Hz, I'm able to simulate 1000 entities with their collisions with a negligible change in memory usage compared to the default gamemode (21.3 MB for both). Without using BVH (bounding volume hierarchy), around one million collision checks are performed per loop. With BVH, this theoretically would be reduced to mere thousands of checks.
+- At the game loop running at 60 Hz, I'm able to simulate 1800 entities with their collisions with a negligible change in memory usage compared to the default gamemode (21.3 MB for both). This is on one worker thread, in a browser tab.
 
-[Simulating 1000 entities and their collisions at 60 FPS](https://github.com/user-attachments/assets/b737dfb2-7abd-4fe2-86b6-c433348d8c79)
-<div align="center">Simulating 1000 entities and their collisions at 60 FPS</div>
+[1800 particles at 60 FPS.webm](https://github.com/user-attachments/assets/e0515a21-f960-4ffd-8394-180c1bf0fdb6)
+<div align="center">Simulating 1800 entities and their collisions at 60 FPS</div>
 
-## Technologies
-
-### Used
-
-- ECS: Allows extremely efficient iteration over components. Gives the compiler a chance to exploit SIMD instructions when, for example, calculating movement.
-- WASM: At the tradeoff of slightly higher page size and more difficult communcation to Typescript, memory usage and execution speed are greatly increased.
-- Rust: Has a good WASM ecosystem and ensures memory safety at small memory sizes.
-- wgpu: Control over vertex and index buffers allows for minimal overhead when copying entity vertex and index data to GPU buffers.
-
-### Planned
-
-- BVH (Bounding volume hierarchy): Check collisions with logarithmic or worst case linear time instead of quadratic time. This is the highest priority optimization because, at 1000 entities, collision checks would be reduced from around one million to a few thousand.
-- Z-ordering: With Z-ordering, the BVH would be constructed efficiently because it naturally orders entities by their proximity. 
-- Rotation & Colors: Essential features forany game engine.
+## Planned Features
+- Rotation: This may require an overhaul of the collisions system. Currently it works on the assumption that every object is bound by an axis-aligned bounding box, and the logic would have to be completely redesigned if I had collisions factor in rotation. A simpler way would be to still use AABBs (axis-aligned bounding boxes), but render the rotation.
+- More shapes: Could be extremely easy if implementation is naive. Same situation as rotation: I could just render the shapes but keep the AABBs, or factor in an object's shape with collision.
+- Colors and textures
+- Sound effects & Background music
