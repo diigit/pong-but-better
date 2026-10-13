@@ -54,8 +54,12 @@ pub fn run_within_worker(
     let mut entity_tracker = EntityTrackingSystem::new(entity_data.clone(), entity_byte_size);
 
     // BENCHMARK
-    /*
+    /* 
     {
+        use nalgebra::{point, vector};
+        use crate::constants::{CANVAS_WIDTH, CANVAS_HEIGHT};
+        use crate::shapes::Shape;
+
         const COLUMNS: u32 = 150;
         const ROWS: u32 = 12;
         const PARTICLE_SIZE: f32 = 3.0;
@@ -72,8 +76,7 @@ pub fn run_within_worker(
 
         world.spawn_batch((0..COLUMNS * ROWS).map(|i| {
             let row = i / COLUMNS;
-            let column = i % COLUMNS;
-            console_log!("{} {}", row, column);
+            let column = i % COLUMNS;   
 
             let position = origin
                 + vector![
